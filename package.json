@@ -1,0 +1,23 @@
+{
+  "name": "ultimate-tic-tac-teo",
+  "version": "1.0.0",
+  "description": "Ultimate Tic-Tac-Toe — online multiplayer board game",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": [
+    "tic-tac-toe",
+    "ultimate",
+    "multiplayer",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "nanoid": "^3.3.11",
+    "ws": "^8.19.0"
+  }
+}

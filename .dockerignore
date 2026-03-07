@@ -1,0 +1,9 @@
+node_modules
+data/*.db
+.git
+.gitignore
+.claude
+.playwright-mcp
+*.md
+*.png
+LICENSE

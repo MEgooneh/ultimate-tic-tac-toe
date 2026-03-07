@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultimate Tic-Tac-Toe</title>
+  <meta name="description" content="Play Ultimate Tic-Tac-Toe online with friends. A strategic board game for 2 players.">
+  <meta property="og:title" content="Ultimate Tic-Tac-Toe">
+  <meta property="og:description" content="Play Ultimate Tic-Tac-Toe online with friends.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="landing">
+    <div class="landing-content">
+      <div class="logo">
+        <div class="logo-grid">
+          <span class="logo-x">X</span><span class="logo-o">O</span><span class="logo-x">X</span>
+          <span class="logo-o">O</span><span class="logo-x">X</span><span class="logo-o">O</span>
+          <span class="logo-x">X</span><span class="logo-o">O</span><span class="logo-x">X</span>
+        </div>
+      </div>
+      <h1>Ultimate<br>Tic-Tac-Toe</h1>
+      <p class="tagline">A strategic board game for 2 players</p>
+
+      <div class="name-input-group">
+        <label for="playerNameInput" class="name-label">Your name</label>
+        <input type="text" id="playerNameInput" class="name-input" placeholder="Enter your name" maxlength="20" autocomplete="off" spellcheck="false">
+      </div>
+
+      <button class="btn btn-primary btn-large" id="startGameBtn">
+        Start Game
+      </button>
+
+      <div class="divider">
+        <span>or join with a code</span>
+      </div>
+
+      <div class="join-form">
+        <input type="text" id="gameCodeInput" placeholder="Enter game code" maxlength="8" autocomplete="off" spellcheck="false">
+        <button class="btn btn-secondary" id="joinGameBtn">Join</button>
+      </div>
+
+      <div id="errorMsg" class="error-msg" hidden></div>
+    </div>
+
+    <footer class="landing-footer">
+      <a href="https://en.wikipedia.org/wiki/Ultimate_tic-tac-toe" target="_blank" rel="noopener">How to play</a>
+      <span class="dot">·</span>
+      <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

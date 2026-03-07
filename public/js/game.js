@@ -1,0 +1,260 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const gameId = window.location.pathname.split('/').pop();
+  const token = getPlayerToken();
+  const playerName = getPlayerName() || 'Player';
+
+  // DOM elements
+  const gameCodeEl = document.getElementById('gameCode');
+  const copiedMsg = document.getElementById('copiedMsg');
+  const indicatorX = document.getElementById('indicatorX');
+  const indicatorO = document.getElementById('indicatorO');
+  const playerXNameEl = document.getElementById('playerXName');
+  const playerONameEl = document.getElementById('playerOName');
+  const statusBar = document.getElementById('statusBar');
+  const waitingOverlay = document.getElementById('waitingOverlay');
+  const waitingCode = document.getElementById('waitingCode');
+  const shareLink = document.getElementById('shareLink');
+  const copyLinkBtn = document.getElementById('copyLinkBtn');
+  const countdownTimer = document.getElementById('countdownTimer');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const resultIcon = document.getElementById('resultIcon');
+  const resultTitle = document.getElementById('resultTitle');
+  const resultSubtitle = document.getElementById('resultSubtitle');
+  const rematchBtn = document.getElementById('rematchBtn');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const rematchToast = document.getElementById('rematchToast');
+  const acceptRematchBtn = document.getElementById('acceptRematchBtn');
+  const declineRematchBtn = document.getElementById('declineRematchBtn');
+  const metaBoardEl = document.getElementById('metaBoard');
+
+  let mySymbol = null;
+  let gameState = null;
+  let countdownInterval = null;
+  let pendingRematchId = null;
+
+  // Setup game code display
+  gameCodeEl.textContent = gameId;
+  gameCodeEl.addEventListener('click', () => copyToClipboard(gameId, copiedMsg));
+
+  // Board renderer
+  const board = new BoardRenderer(metaBoardEl, (boardIndex, cellIndex) => {
+    ws.send({ type: 'move', boardIndex, cellIndex });
+  });
+
+  // WebSocket
+  const ws = new WsClient(gameId, token, playerName);
+
+  ws.on('game_state', (data) => {
+    gameState = data;
+    mySymbol = data.yourSymbol;
+    board.setMySymbol(mySymbol);
+    board.update(data);
+    updateIndicators(data);
+    updateStatus(data);
+
+    if (data.status === 'waiting') {
+      showWaiting();
+    } else if (data.status === 'finished') {
+      showGameOver(data.winner);
+    } else {
+      waitingOverlay.hidden = true;
+    }
+  });
+
+  ws.on('game_started', (data) => {
+    gameState = data;
+    waitingOverlay.hidden = true;
+    clearCountdown();
+    board.update(data);
+    updateIndicators(data);
+    updateStatus(data);
+  });
+
+  ws.on('move_made', (data) => {
+    gameState = {
+      ...gameState,
+      boardState: data.boardState,
+      metaBoard: data.metaBoard,
+      activeBoard: data.activeBoard,
+      currentTurn: data.symbol === 'X' ? 'O' : 'X',
+    };
+    board.update(gameState);
+    board.animateMove(data.boardIndex, data.cellIndex, data.symbol);
+    updateIndicators(gameState);
+    updateStatus(gameState);
+  });
+
+  ws.on('invalid_move', (data) => {
+    statusBar.textContent = data.reason;
+    statusBar.className = 'status-bar';
+    setTimeout(() => updateStatus(gameState), 2000);
+  });
+
+  ws.on('game_over', (data) => {
+    if (gameState) {
+      gameState.winner = data.winner;
+      gameState.status = 'finished';
+    }
+    showGameOver(data.winner);
+  });
+
+  ws.on('opponent_disconnected', () => {
+    statusBar.textContent = 'Opponent disconnected...';
+    statusBar.className = 'status-bar';
+  });
+
+  ws.on('opponent_reconnected', () => {
+    if (gameState) updateStatus(gameState);
+  });
+
+  ws.on('game_expired', () => {
+    waitingOverlay.hidden = true;
+    clearCountdown();
+    statusBar.textContent = 'Game expired — no one joined';
+    statusBar.className = 'status-bar';
+  });
+
+  ws.on('rematch_offered', (data) => {
+    pendingRematchId = data.newGameId;
+    if (data.byYou) {
+      rematchBtn.disabled = true;
+      rematchBtn.textContent = 'Waiting...';
+    } else {
+      rematchToast.classList.add('show');
+    }
+  });
+
+  ws.on('rematch_accepted', (data) => {
+    window.location.href = `/game/${data.newGameId}`;
+  });
+
+  ws.on('rematch_declined', () => {
+    rematchBtn.disabled = false;
+    rematchBtn.textContent = 'Play Again';
+    statusBar.textContent = 'Opponent declined the rematch';
+    statusBar.className = 'status-bar';
+  });
+
+  ws.on('error', (data) => {
+    console.error('WS error:', data.message);
+  });
+
+  ws.on('disconnected', () => {
+    statusBar.textContent = 'Reconnecting...';
+    statusBar.className = 'status-bar pulse';
+  });
+
+  ws.on('connected', () => {
+    if (gameState) updateStatus(gameState);
+  });
+
+  ws.connect();
+
+  // Waiting overlay
+  function showWaiting() {
+    waitingOverlay.hidden = false;
+    waitingCode.textContent = gameId;
+    const link = `${getBaseUrl()}/game/${gameId}`;
+    shareLink.value = link;
+    startCountdown();
+  }
+
+  copyLinkBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(shareLink.value).then(() => {
+      copyLinkBtn.textContent = 'Copied!';
+      setTimeout(() => { copyLinkBtn.textContent = 'Copy Link'; }, 2000);
+    });
+  });
+
+  function startCountdown() {
+    clearCountdown();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    countdownInterval = setInterval(() => {
+      const remaining = Math.max(0, expiresAt - Date.now());
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      countdownTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+      if (remaining <= 0) clearCountdown();
+    }, 1000);
+  }
+
+  function clearCountdown() {
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  }
+
+  // Status updates
+  function updateStatus(state) {
+    if (!state) return;
+    if (state.status === 'waiting') {
+      statusBar.textContent = 'Waiting for opponent...';
+      statusBar.className = 'status-bar pulse';
+    } else if (state.status === 'finished') {
+      // handled by overlay
+    } else if (state.currentTurn === mySymbol) {
+      statusBar.textContent = 'Your turn';
+      statusBar.className = 'status-bar your-turn';
+    } else {
+      statusBar.textContent = "Opponent's turn";
+      statusBar.className = 'status-bar';
+    }
+  }
+
+  function updateIndicators(state) {
+    indicatorX.classList.toggle('active', state.currentTurn === 'X');
+    indicatorO.classList.toggle('active', state.currentTurn === 'O');
+    indicatorX.classList.toggle('you', mySymbol === 'X');
+    indicatorO.classList.toggle('you', mySymbol === 'O');
+    if (state.playerXName) playerXNameEl.textContent = state.playerXName;
+    if (state.playerOName) playerONameEl.textContent = state.playerOName;
+  }
+
+  // Game over
+  function showGameOver(winner) {
+    gameOverOverlay.hidden = false;
+    if (winner === 'draw') {
+      resultIcon.textContent = '🤝';
+      resultTitle.textContent = "It's a Draw!";
+      resultSubtitle.textContent = 'Well played by both sides.';
+    } else if (winner === mySymbol) {
+      resultIcon.textContent = '🎉';
+      resultTitle.textContent = 'You Won!';
+      resultTitle.style.color = mySymbol === 'X' ? 'var(--color-x)' : 'var(--color-o)';
+      resultSubtitle.textContent = 'Brilliant strategy!';
+    } else {
+      resultIcon.textContent = '😔';
+      resultTitle.textContent = 'You Lost';
+      resultTitle.style.color = '';
+      resultSubtitle.textContent = 'Better luck next time!';
+    }
+  }
+
+  rematchBtn.addEventListener('click', () => {
+    ws.send({ type: 'rematch_request' });
+  });
+
+  newGameBtn.addEventListener('click', () => {
+    window.location.href = '/';
+  });
+
+  acceptRematchBtn.addEventListener('click', () => {
+    if (pendingRematchId) {
+      ws.send({ type: 'rematch_accept', newGameId: pendingRematchId });
+    }
+  });
+
+  declineRematchBtn.addEventListener('click', () => {
+    ws.send({ type: 'rematch_decline' });
+    rematchToast.classList.remove('show');
+    pendingRematchId = null;
+  });
+
+  function copyToClipboard(text, feedbackEl) {
+    navigator.clipboard.writeText(text).then(() => {
+      feedbackEl.classList.add('show');
+      setTimeout(() => feedbackEl.classList.remove('show'), 1500);
+    });
+  }
+});

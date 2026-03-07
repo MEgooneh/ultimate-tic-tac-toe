@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Game — Ultimate Tic-Tac-Toe</title>
+  <meta name="description" content="Play Ultimate Tic-Tac-Toe online with friends.">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/board.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body class="no-select">
+  <div class="game-container">
+    <div class="game-top-bar">
+      <a href="/" class="back-btn">← Back</a>
+      <div class="game-code">
+        <code id="gameCode"></code>
+        <span class="copied" id="copiedMsg">Copied!</span>
+      </div>
+    </div>
+
+    <div class="versus-bar">
+      <div class="player-badge player-x" id="indicatorX">
+        <span class="player-symbol">X</span>
+        <span class="player-name" id="playerXName">Player X</span>
+      </div>
+      <div class="versus-text">vs</div>
+      <div class="player-badge player-o" id="indicatorO">
+        <span class="player-symbol">O</span>
+        <span class="player-name" id="playerOName">Player O</span>
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">Connecting...</div>
+
+    <div class="board-wrapper" id="boardWrapper">
+      <div class="meta-board" id="metaBoard"></div>
+    </div>
+  </div>
+
+  <!-- Waiting Overlay -->
+  <div class="overlay" id="waitingOverlay" hidden>
+    <div class="overlay-content">
+      <h2>Waiting for opponent</h2>
+      <p>Share this link or code with a friend to start playing</p>
+      <div class="overlay-code" id="waitingCode"></div>
+      <div class="share-link">
+        <input type="text" id="shareLink" readonly>
+        <button class="btn btn-secondary" id="copyLinkBtn">Copy Link</button>
+      </div>
+      <div class="countdown" id="countdown">
+        <span class="spinner"></span> Waiting... <span id="countdownTimer"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div class="overlay" id="gameOverOverlay" hidden>
+    <div class="overlay-content">
+      <div class="result-icon" id="resultIcon"></div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultSubtitle"></p>
+      <div class="overlay-actions">
+        <button class="btn btn-primary" id="rematchBtn">Play Again</button>
+        <button class="btn btn-secondary" id="newGameBtn">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rematch Toast -->
+  <div class="toast" id="rematchToast">
+    <div>Opponent wants a rematch!</div>
+    <div class="toast-actions">
+      <button class="btn btn-primary" id="acceptRematchBtn">Accept</button>
+      <button class="btn btn-secondary" id="declineRematchBtn">Decline</button>
+    </div>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/ws-client.js"></script>
+  <script src="/js/board-renderer.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>

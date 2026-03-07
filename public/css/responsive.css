@@ -1,0 +1,192 @@
+/* Mobile-first responsive design */
+
+/* Small phones */
+@media (max-width: 380px) {
+  .meta-board {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .sub-board-inner {
+    gap: 1px;
+    padding: 2px;
+  }
+
+  .cell.x::before,
+  .cell.x::after {
+    height: 2px;
+  }
+
+  .cell.o::before {
+    border-width: 2px;
+  }
+
+  .won-overlay {
+    font-size: 2rem;
+  }
+
+  .won-overlay.draw {
+    font-size: 1.5rem;
+  }
+
+  .game-top-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+}
+
+/* Phones */
+@media (max-width: 600px) {
+  .landing {
+    padding: 1.5rem;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+  }
+
+  .tagline {
+    margin-bottom: 2rem;
+  }
+
+  .overlay-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .overlay-code {
+    font-size: 1.5rem;
+  }
+
+  .overlay-actions {
+    flex-direction: column;
+  }
+
+  .overlay-actions .btn {
+    width: 100%;
+  }
+
+  .share-link {
+    flex-direction: column;
+  }
+
+  .share-link input {
+    font-size: 0.75rem;
+  }
+
+  .game-top-bar {
+    padding: 0.5rem 0;
+  }
+
+  .status-bar {
+    font-size: 0.9rem;
+  }
+
+  .versus-bar {
+    gap: 0.5rem;
+  }
+
+  .player-badge {
+    padding: 0.3rem 0.5rem;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+  }
+
+  .player-symbol {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .player-name {
+    max-width: 70px;
+    font-size: 0.8rem;
+  }
+
+  .versus-text {
+    font-size: 0.75rem;
+  }
+
+  .landing-footer {
+    bottom: 1rem;
+  }
+}
+
+/* Tablets and small desktops */
+@media (min-width: 601px) and (max-width: 900px) {
+  .meta-board {
+    width: min(80vw, 500px);
+  }
+}
+
+/* Large desktops */
+@media (min-width: 901px) {
+  .meta-board {
+    width: 540px;
+  }
+
+  .cell {
+    font-size: 1.4rem;
+  }
+
+  .won-overlay {
+    font-size: 3.5rem;
+  }
+
+  .sub-board-inner {
+    gap: 3px;
+    padding: 4px;
+  }
+}
+
+/* Touch devices: larger tap targets */
+@media (hover: none) and (pointer: coarse) {
+  .cell.clickable {
+    min-height: 28px;
+    min-width: 28px;
+  }
+
+  .cell.clickable:hover {
+    transform: none;
+  }
+
+  .cell.clickable:active {
+    transform: scale(0.92);
+    background: var(--color-border);
+  }
+}
+
+/* Landscape phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-container {
+    padding: 0.5rem;
+  }
+
+  .game-top-bar {
+    padding: 0.25rem 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .status-bar {
+    padding: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+  }
+
+  .meta-board {
+    width: min(85vh, 400px);
+  }
+}
+
+/* Prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
