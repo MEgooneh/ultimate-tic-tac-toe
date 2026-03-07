@@ -1,4 +1,4 @@
-FROM node:24-slim AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY client/ ./client/
 
 RUN mkdir -p public/js && npx tsc && npx tsc -p tsconfig.client.json
 
-FROM node:24-slim
+FROM node:22-slim
 
 RUN groupadd --system app && useradd --system --gid app app
 
