@@ -1,16 +1,3 @@
-FROM node:22-slim AS builder
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY tsconfig.json tsconfig.client.json ./
-COPY server/ ./server/
-COPY client/ ./client/
-
-RUN mkdir -p public/js && npx tsc && npx tsc -p tsconfig.client.json
-
 FROM node:22-slim
 
 RUN groupadd --system app && useradd --system --gid app app
@@ -18,11 +5,14 @@ RUN groupadd --system app && useradd --system --gid app app
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci && npm cache clean --force
 
-COPY --from=builder /app/dist/ ./dist/
+COPY tsconfig.json tsconfig.client.json ./
+COPY server/ ./server/
+COPY client/ ./client/
 COPY public/ ./public/
-COPY --from=builder /app/public/js/ ./public/js/
+
+RUN npx tsc && npx tsc -p tsconfig.client.json && rm -rf server/ client/ tsconfig*.json node_modules/typescript node_modules/@types
 
 RUN mkdir -p /app/data && chown -R app:app /app/data
 
