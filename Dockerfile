@@ -1,4 +1,4 @@
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 
 WORKDIR /app
 
@@ -11,9 +11,9 @@ COPY client/ ./client/
 
 RUN mkdir -p public/js && npx tsc && npx tsc -p tsconfig.client.json
 
-FROM node:24-alpine
+FROM node:24-slim
 
-RUN addgroup -S app && adduser -S app -G app
+RUN groupadd --system app && useradd --system --gid app app
 
 WORKDIR /app
 
@@ -35,6 +35,6 @@ ENV DB_PATH=/app/data/uttt.db
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
-  CMD wget -qO- http://localhost:3000/api/health || exit 1
+  CMD node -e "require('http').get('http://localhost:3000/api/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
 
 CMD ["node", "dist/index.js"]
