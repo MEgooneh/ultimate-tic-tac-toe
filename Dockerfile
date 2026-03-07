@@ -4,15 +4,15 @@ RUN groupadd --system app && useradd --system --gid app app
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci && npm cache clean --force
-
-COPY tsconfig.json tsconfig.client.json ./
+COPY node_modules/ ./node_modules/
+COPY tsconfig.json tsconfig.client.json package.json ./
 COPY server/ ./server/
 COPY client/ ./client/
 COPY public/ ./public/
 
-RUN npx tsc && npx tsc -p tsconfig.client.json && rm -rf server/ client/ tsconfig*.json node_modules/typescript node_modules/@types
+RUN npx tsc && npx tsc -p tsconfig.client.json \
+    && rm -rf server/ client/ tsconfig*.json \
+       node_modules/typescript node_modules/@types
 
 RUN mkdir -p /app/data && chown -R app:app /app/data
 
