@@ -165,11 +165,13 @@ function createRematch(gameId, playerToken) {
     }
     const id = (0, nanoid_1.nanoid)(8);
     const now = Date.now();
+    // Requester becomes X in the new game; accepter will join as O
+    const requesterName = symbol === 'X' ? game.player_x_name : game.player_o_name;
     const newGame = {
         id,
         status: 'waiting',
-        player_x: game.player_o,
-        player_x_name: game.player_o_name || 'Player X',
+        player_x: playerToken,
+        player_x_name: (requesterName || 'Player X').slice(0, 20),
         player_o: null,
         player_o_name: 'Player O',
         current_turn: 'X',
