@@ -1,11 +1,10 @@
-const url = require('url');
 const db = require('./db');
 const gm = require('./game-manager');
 const { wsRateCheck } = require('./rate-limit');
 
 function setupWebSocket(wss) {
   wss.on('connection', (ws, req) => {
-    const params = new URLSearchParams(url.parse(req.url).query);
+    const params = new URL(req.url, 'http://localhost').searchParams;
     const gameId = params.get('gameId');
     const playerToken = params.get('playerToken');
     const playerName = params.get('playerName') || '';
