@@ -1,14 +1,18 @@
-FROM node:22-alpine
+FROM node:24-alpine
+
+RUN addgroup -S app && adduser -S app -G app
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 COPY server/ ./server/
 COPY public/ ./public/
 
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data && chown -R app:app /app/data
+
+USER app
 
 ENV NODE_ENV=production
 ENV PORT=3000
