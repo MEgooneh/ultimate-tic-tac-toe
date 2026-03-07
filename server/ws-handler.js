@@ -61,6 +61,7 @@ function handleNewConnection(ws, gameId, symbol, playerToken, playerName = '', j
   }));
 
   if (game.status === 'active' && !justJoined) {
+    gm.clearDisconnectTimer(gameId);
     const opponent = symbol === 'X' ? 'O' : 'X';
     gm.sendTo(gameId, opponent, { type: 'opponent_reconnected' });
   }
@@ -90,8 +91,14 @@ function handleNewConnection(ws, gameId, symbol, playerToken, playerName = '', j
 
   ws.on('close', () => {
     gm.removeConnection(gameId, symbol);
+    const game = db.getGame(gameId);
     const opponent = symbol === 'X' ? 'O' : 'X';
-    gm.sendTo(gameId, opponent, { type: 'opponent_disconnected' });
+    if (game && game.status === 'active') {
+      gm.startDisconnectTimer(gameId, symbol);
+      gm.sendTo(gameId, opponent, { type: 'opponent_disconnected', data: { forfeitIn: 5 * 60 * 1000 } });
+    } else {
+      gm.sendTo(gameId, opponent, { type: 'opponent_disconnected' });
+    }
   });
 }
 

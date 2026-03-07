@@ -9,5 +9,6 @@ module.exports = {
   maxGamesPerIp: parseInt(process.env.MAX_GAMES_PER_IP, 10) || 10, // per window
   rateLimitWindowMs: 60 * 1000, // 1 minute
   wsRateLimitPerSec: 10, // max WS messages per second per connection
+  disconnectForfeitMs: 5 * 60 * 1000, // 5 minutes
   domain: process.env.DOMAIN || 'localhost',
 };

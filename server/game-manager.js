@@ -33,7 +33,7 @@ function createGame(playerToken, playerName) {
     expireGame(id);
   }, config.gameExpiryMs);
 
-  activeGames.set(id, { connections: { X: null, O: null }, expiryTimeout });
+  activeGames.set(id, { connections: { X: null, O: null }, expiryTimeout, disconnectTimeout: null });
 
   return id;
 }
@@ -150,7 +150,7 @@ function createRematch(gameId, playerToken) {
   db.createGame(newGame);
   db.updateGame(gameId, { rematch_game_id: id, updated_at: now });
 
-  activeGames.set(id, { connections: { X: null, O: null }, expiryTimeout: null });
+  activeGames.set(id, { connections: { X: null, O: null }, expiryTimeout: null, disconnectTimeout: null });
 
   return { ok: true, newGameId: id };
 }
@@ -179,7 +179,7 @@ function expireGame(gameId) {
 
 function getActiveGame(gameId) {
   if (!activeGames.has(gameId)) {
-    activeGames.set(gameId, { connections: { X: null, O: null }, expiryTimeout: null });
+    activeGames.set(gameId, { connections: { X: null, O: null }, expiryTimeout: null, disconnectTimeout: null });
   }
   return activeGames.get(gameId);
 }
@@ -192,6 +192,40 @@ function setConnection(gameId, symbol, ws) {
 function removeConnection(gameId, symbol) {
   const ag = activeGames.get(gameId);
   if (ag) ag.connections[symbol] = null;
+}
+
+function startDisconnectTimer(gameId, disconnectedSymbol) {
+  const ag = activeGames.get(gameId);
+  if (!ag) return;
+  clearDisconnectTimer(gameId);
+  ag.disconnectTimeout = setTimeout(() => {
+    forfeitGame(gameId, disconnectedSymbol);
+  }, config.disconnectForfeitMs);
+}
+
+function clearDisconnectTimer(gameId) {
+  const ag = activeGames.get(gameId);
+  if (ag && ag.disconnectTimeout) {
+    clearTimeout(ag.disconnectTimeout);
+    ag.disconnectTimeout = null;
+  }
+}
+
+function forfeitGame(gameId, disconnectedSymbol) {
+  const game = db.getGame(gameId);
+  if (!game || game.status !== 'active') return;
+  const winner = disconnectedSymbol === 'X' ? 'O' : 'X';
+  const now = Date.now();
+  db.updateGame(gameId, {
+    status: 'finished',
+    winner,
+    finished_at: now,
+    updated_at: now,
+  });
+  broadcast(gameId, {
+    type: 'game_over',
+    data: { winner, forfeit: true },
+  });
 }
 
 function broadcast(gameId, message) {
@@ -263,4 +297,6 @@ module.exports = {
   cleanupExpired,
   startCleanupInterval,
   getGameState,
+  startDisconnectTimer,
+  clearDisconnectTimer,
 };

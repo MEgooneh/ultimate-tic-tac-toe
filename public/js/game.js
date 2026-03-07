@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let gameState = null;
   let countdownInterval = null;
   let pendingRematchId = null;
+  let disconnectCountdownInterval = null;
 
   // Setup game code display
   gameCodeEl.textContent = gameId;
@@ -91,19 +92,34 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   ws.on('game_over', (data) => {
+    clearDisconnectCountdown();
     if (gameState) {
       gameState.winner = data.winner;
       gameState.status = 'finished';
     }
-    showGameOver(data.winner);
+    showGameOver(data.winner, data.forfeit);
   });
 
-  ws.on('opponent_disconnected', () => {
-    statusBar.textContent = 'Opponent disconnected...';
-    statusBar.className = 'status-bar';
+  ws.on('opponent_disconnected', (data) => {
+    clearDisconnectCountdown();
+    if (data && data.forfeitIn) {
+      const expiresAt = Date.now() + data.forfeitIn;
+      disconnectCountdownInterval = setInterval(() => {
+        const remaining = Math.max(0, expiresAt - Date.now());
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        statusBar.textContent = `Opponent disconnected — forfeit in ${mins}:${secs.toString().padStart(2, '0')}`;
+        statusBar.className = 'status-bar';
+        if (remaining <= 0) clearDisconnectCountdown();
+      }, 1000);
+    } else {
+      statusBar.textContent = 'Opponent disconnected...';
+      statusBar.className = 'status-bar';
+    }
   });
 
   ws.on('opponent_reconnected', () => {
+    clearDisconnectCountdown();
     if (gameState) updateStatus(gameState);
   });
 
@@ -212,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Game over
-  function showGameOver(winner) {
+  function showGameOver(winner, forfeit) {
     gameOverOverlay.hidden = false;
     if (winner === 'draw') {
       resultIcon.textContent = '🤝';
@@ -222,12 +238,19 @@ document.addEventListener('DOMContentLoaded', () => {
       resultIcon.textContent = '🎉';
       resultTitle.textContent = 'You Won!';
       resultTitle.style.color = mySymbol === 'X' ? 'var(--color-x)' : 'var(--color-o)';
-      resultSubtitle.textContent = 'Brilliant strategy!';
+      resultSubtitle.textContent = forfeit ? 'Opponent forfeited by disconnecting.' : 'Brilliant strategy!';
     } else {
       resultIcon.textContent = '😔';
       resultTitle.textContent = 'You Lost';
       resultTitle.style.color = '';
-      resultSubtitle.textContent = 'Better luck next time!';
+      resultSubtitle.textContent = forfeit ? 'You were disconnected too long.' : 'Better luck next time!';
+    }
+  }
+
+  function clearDisconnectCountdown() {
+    if (disconnectCountdownInterval) {
+      clearInterval(disconnectCountdownInterval);
+      disconnectCountdownInterval = null;
     }
   }
 
