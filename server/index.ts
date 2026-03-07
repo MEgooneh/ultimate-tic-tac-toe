@@ -1,12 +1,12 @@
-const http = require('http');
-const path = require('path');
-const express = require('express');
-const { WebSocketServer } = require('ws');
-const config = require('./config');
-const db = require('./db');
-const routes = require('./routes');
-const { setupWebSocket } = require('./ws-handler');
-const gm = require('./game-manager');
+import http from 'http';
+import path from 'path';
+import express from 'express';
+import { WebSocketServer } from 'ws';
+import config from './config';
+import * as db from './db';
+import routes from './routes';
+import { setupWebSocket } from './ws-handler';
+import * as gm from './game-manager';
 
 db.init();
 
@@ -16,7 +16,6 @@ app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? true : false);
 
 app.use(express.json({ limit: '1kb' }));
 
-// Security headers
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -48,7 +47,7 @@ server.listen(config.port, () => {
   console.log(`Ultimate Tic-Tac-Toe server running on port ${config.port}`);
 });
 
-function shutdown() {
+function shutdown(): void {
   console.log('Shutting down...');
   server.close();
   db.close();

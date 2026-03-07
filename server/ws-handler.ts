@@ -1,10 +1,21 @@
-const db = require('./db');
-const gm = require('./game-manager');
-const { wsRateCheck } = require('./rate-limit');
+import type { WebSocket, WebSocketServer } from 'ws';
+import type { IncomingMessage } from 'http';
+import * as db from './db';
+import * as gm from './game-manager';
+import { wsRateCheck } from './rate-limit';
+import config from './config';
+import type { PlayerSymbol } from './types';
 
-function setupWebSocket(wss) {
-  wss.on('connection', (ws, req) => {
-    const params = new URL(req.url, 'http://localhost').searchParams;
+interface WsMessage {
+  type: string;
+  boardIndex?: number;
+  cellIndex?: number;
+  newGameId?: string;
+}
+
+export function setupWebSocket(wss: WebSocketServer): void {
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+    const params = new URL(req.url || '', 'http://localhost').searchParams;
     const gameId = params.get('gameId');
     const playerToken = params.get('playerToken');
     const playerName = params.get('playerName') || '';
@@ -45,7 +56,7 @@ function setupWebSocket(wss) {
   });
 }
 
-function handleNewConnection(ws, gameId, symbol, playerToken, playerName = '', justJoined = false) {
+function handleNewConnection(ws: WebSocket, gameId: string, symbol: PlayerSymbol, playerToken: string, playerName: string = '', justJoined: boolean = false): void {
   gm.setConnection(gameId, symbol, ws);
 
   const game = db.getGame(gameId);
@@ -56,13 +67,13 @@ function handleNewConnection(ws, gameId, symbol, playerToken, playerName = '', j
     data: {
       ...state,
       yourSymbol: symbol,
-      hasOpponent: !!(game.player_x && game.player_o),
+      hasOpponent: !!(game?.player_x && game?.player_o),
     },
   }));
 
-  if (game.status === 'active' && !justJoined) {
+  if (game?.status === 'active' && !justJoined) {
     gm.clearDisconnectTimer(gameId);
-    const opponent = symbol === 'X' ? 'O' : 'X';
+    const opponent: PlayerSymbol = symbol === 'X' ? 'O' : 'X';
     gm.sendTo(gameId, opponent, { type: 'opponent_reconnected' });
   }
 
@@ -74,12 +85,12 @@ function handleNewConnection(ws, gameId, symbol, playerToken, playerName = '', j
     });
   }
 
-  ws.on('message', (raw) => {
+  ws.on('message', (raw: Buffer) => {
     if (!wsRateCheck(ws)) {
       ws.send(JSON.stringify({ type: 'error', data: { message: 'Too many messages. Slow down.' } }));
       return;
     }
-    let msg;
+    let msg: WsMessage;
     try {
       msg = JSON.parse(raw.toString());
     } catch {
@@ -91,21 +102,21 @@ function handleNewConnection(ws, gameId, symbol, playerToken, playerName = '', j
 
   ws.on('close', () => {
     gm.removeConnection(gameId, symbol);
-    const game = db.getGame(gameId);
-    const opponent = symbol === 'X' ? 'O' : 'X';
-    if (game && game.status === 'active') {
+    const currentGame = db.getGame(gameId);
+    const opponent: PlayerSymbol = symbol === 'X' ? 'O' : 'X';
+    if (currentGame && currentGame.status === 'active') {
       gm.startDisconnectTimer(gameId, symbol);
-      gm.sendTo(gameId, opponent, { type: 'opponent_disconnected', data: { forfeitIn: 5 * 60 * 1000 } });
+      gm.sendTo(gameId, opponent, { type: 'opponent_disconnected', data: { forfeitIn: config.disconnectForfeitMs } });
     } else {
       gm.sendTo(gameId, opponent, { type: 'opponent_disconnected' });
     }
   });
 }
 
-function handleMessage(ws, gameId, symbol, playerToken, playerName, msg) {
+function handleMessage(ws: WebSocket, gameId: string, symbol: PlayerSymbol, playerToken: string, playerName: string, msg: WsMessage): void {
   switch (msg.type) {
     case 'move': {
-      const result = gm.makeMove(gameId, playerToken, msg.boardIndex, msg.cellIndex);
+      const result = gm.makeMove(gameId, playerToken, msg.boardIndex!, msg.cellIndex!);
       if (result.error) {
         ws.send(JSON.stringify({ type: 'invalid_move', data: { reason: result.error } }));
         return;
@@ -135,7 +146,7 @@ function handleMessage(ws, gameId, symbol, playerToken, playerName, msg) {
         ws.send(JSON.stringify({ type: 'error', data: { message: result.error } }));
         return;
       }
-      const opponent = symbol === 'X' ? 'O' : 'X';
+      const opponent: PlayerSymbol = symbol === 'X' ? 'O' : 'X';
       gm.sendTo(gameId, opponent, {
         type: 'rematch_offered',
         data: { newGameId: result.newGameId },
@@ -163,7 +174,7 @@ function handleMessage(ws, gameId, symbol, playerToken, playerName, msg) {
       break;
     }
     case 'rematch_decline': {
-      const opponent = symbol === 'X' ? 'O' : 'X';
+      const opponent: PlayerSymbol = symbol === 'X' ? 'O' : 'X';
       gm.sendTo(gameId, opponent, { type: 'rematch_declined' });
       break;
     }
@@ -171,5 +182,3 @@ function handleMessage(ws, gameId, symbol, playerToken, playerName, msg) {
       ws.send(JSON.stringify({ type: 'error', data: { message: 'Unknown message type' } }));
   }
 }
-
-module.exports = { setupWebSocket };

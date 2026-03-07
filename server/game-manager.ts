@@ -1,14 +1,16 @@
-const { nanoid } = require('nanoid');
-const db = require('./db');
-const config = require('./config');
-const logic = require('./game-logic');
+import { nanoid } from 'nanoid';
+import * as db from './db';
+import config from './config';
+import * as logic from './game-logic';
+import type { GameRow, GameState, ActiveGame, PlayerSymbol, GameUpdateFields } from './types';
+import type { WebSocket } from 'ws';
 
-const activeGames = new Map();
+const activeGames = new Map<string, ActiveGame>();
 
-function createGame(playerToken, playerName) {
+export function createGame(playerToken: string, playerName?: string): string {
   const id = nanoid(8);
   const now = Date.now();
-  const game = {
+  const game: GameRow = {
     id,
     status: 'waiting',
     player_x: playerToken,
@@ -38,7 +40,7 @@ function createGame(playerToken, playerName) {
   return id;
 }
 
-function joinGame(gameId, playerToken, playerName) {
+export function joinGame(gameId: string, playerToken: string, playerName?: string): { error?: string; ok?: boolean; reconnect?: boolean; game?: GameRow } {
   const game = db.getGame(gameId);
   if (!game) return { error: 'Game not found' };
   if (game.status !== 'waiting') {
@@ -59,7 +61,7 @@ function joinGame(gameId, playerToken, playerName) {
   });
 
   const activeGame = activeGames.get(gameId);
-  if (activeGame && activeGame.expiryTimeout) {
+  if (activeGame?.expiryTimeout) {
     clearTimeout(activeGame.expiryTimeout);
     activeGame.expiryTimeout = null;
   }
@@ -67,7 +69,19 @@ function joinGame(gameId, playerToken, playerName) {
   return { ok: true, game: db.getGame(gameId) };
 }
 
-function makeMove(gameId, playerToken, boardIndex, cellIndex) {
+interface MakeMoveResult {
+  error?: string;
+  ok?: boolean;
+  boardIndex?: number;
+  cellIndex?: number;
+  symbol?: PlayerSymbol;
+  activeBoard?: number;
+  metaBoard?: (PlayerSymbol | 'draw' | null)[];
+  winner?: PlayerSymbol | 'draw' | null;
+  boardState?: (PlayerSymbol | null)[][];
+}
+
+export function makeMove(gameId: string, playerToken: string, boardIndex: number, cellIndex: number): MakeMoveResult {
   const game = db.getGame(gameId);
   if (!game) return { error: 'Game not found' };
 
@@ -83,10 +97,10 @@ function makeMove(gameId, playerToken, boardIndex, cellIndex) {
   }
 
   const result = logic.applyMove(boardState, metaBoard, boardIndex, cellIndex, symbol);
-  const nextTurn = symbol === 'X' ? 'O' : 'X';
+  const nextTurn: PlayerSymbol = symbol === 'X' ? 'O' : 'X';
   const now = Date.now();
 
-  const updates = {
+  const updates: GameUpdateFields = {
     board_state: JSON.stringify(result.boardState),
     meta_board: JSON.stringify(result.metaBoard),
     active_board: result.activeBoard,
@@ -114,7 +128,7 @@ function makeMove(gameId, playerToken, boardIndex, cellIndex) {
   };
 }
 
-function createRematch(gameId, playerToken) {
+export function createRematch(gameId: string, playerToken: string): { error?: string; ok?: boolean; newGameId?: string; alreadyExists?: boolean } {
   const game = db.getGame(gameId);
   if (!game) return { error: 'Game not found' };
   if (game.status !== 'finished') return { error: 'Game is not finished' };
@@ -128,10 +142,10 @@ function createRematch(gameId, playerToken) {
 
   const id = nanoid(8);
   const now = Date.now();
-  const newGame = {
+  const newGame: GameRow = {
     id,
     status: 'waiting',
-    player_x: game.player_o,
+    player_x: game.player_o!,
     player_x_name: game.player_o_name || 'Player X',
     player_o: null,
     player_o_name: 'Player O',
@@ -155,17 +169,17 @@ function createRematch(gameId, playerToken) {
   return { ok: true, newGameId: id };
 }
 
-function acceptRematch(newGameId, playerToken, playerName) {
+export function acceptRematch(newGameId: string, playerToken: string, playerName?: string) {
   return joinGame(newGameId, playerToken, playerName);
 }
 
-function getPlayerSymbol(game, playerToken) {
+export function getPlayerSymbol(game: GameRow, playerToken: string): PlayerSymbol | null {
   if (game.player_x === playerToken) return 'X';
   if (game.player_o === playerToken) return 'O';
   return null;
 }
 
-function expireGame(gameId) {
+function expireGame(gameId: string): void {
   const game = db.getGame(gameId);
   if (game && game.status === 'waiting') {
     db.updateGame(gameId, { status: 'expired', updated_at: Date.now() });
@@ -177,24 +191,24 @@ function expireGame(gameId) {
   }
 }
 
-function getActiveGame(gameId) {
+export function getActiveGame(gameId: string): ActiveGame {
   if (!activeGames.has(gameId)) {
     activeGames.set(gameId, { connections: { X: null, O: null }, expiryTimeout: null, disconnectTimeout: null });
   }
-  return activeGames.get(gameId);
+  return activeGames.get(gameId)!;
 }
 
-function setConnection(gameId, symbol, ws) {
+export function setConnection(gameId: string, symbol: PlayerSymbol, ws: WebSocket): void {
   const ag = getActiveGame(gameId);
   ag.connections[symbol] = ws;
 }
 
-function removeConnection(gameId, symbol) {
+export function removeConnection(gameId: string, symbol: PlayerSymbol): void {
   const ag = activeGames.get(gameId);
   if (ag) ag.connections[symbol] = null;
 }
 
-function startDisconnectTimer(gameId, disconnectedSymbol) {
+export function startDisconnectTimer(gameId: string, disconnectedSymbol: PlayerSymbol): void {
   const ag = activeGames.get(gameId);
   if (!ag) return;
   clearDisconnectTimer(gameId);
@@ -203,18 +217,18 @@ function startDisconnectTimer(gameId, disconnectedSymbol) {
   }, config.disconnectForfeitMs);
 }
 
-function clearDisconnectTimer(gameId) {
+export function clearDisconnectTimer(gameId: string): void {
   const ag = activeGames.get(gameId);
-  if (ag && ag.disconnectTimeout) {
+  if (ag?.disconnectTimeout) {
     clearTimeout(ag.disconnectTimeout);
     ag.disconnectTimeout = null;
   }
 }
 
-function forfeitGame(gameId, disconnectedSymbol) {
+function forfeitGame(gameId: string, disconnectedSymbol: PlayerSymbol): void {
   const game = db.getGame(gameId);
   if (!game || game.status !== 'active') return;
-  const winner = disconnectedSymbol === 'X' ? 'O' : 'X';
+  const winner: PlayerSymbol = disconnectedSymbol === 'X' ? 'O' : 'X';
   const now = Date.now();
   db.updateGame(gameId, {
     status: 'finished',
@@ -228,22 +242,22 @@ function forfeitGame(gameId, disconnectedSymbol) {
   });
 }
 
-function broadcast(gameId, message) {
+export function broadcast(gameId: string, message: Record<string, unknown>): void {
   const ag = activeGames.get(gameId);
   if (!ag) return;
   const data = JSON.stringify(message);
-  if (ag.connections.X && ag.connections.X.readyState === 1) ag.connections.X.send(data);
-  if (ag.connections.O && ag.connections.O.readyState === 1) ag.connections.O.send(data);
+  if (ag.connections.X?.readyState === 1) ag.connections.X.send(data);
+  if (ag.connections.O?.readyState === 1) ag.connections.O.send(data);
 }
 
-function sendTo(gameId, symbol, message) {
+export function sendTo(gameId: string, symbol: PlayerSymbol, message: Record<string, unknown>): void {
   const ag = activeGames.get(gameId);
   if (!ag) return;
   const ws = ag.connections[symbol];
-  if (ws && ws.readyState === 1) ws.send(JSON.stringify(message));
+  if (ws?.readyState === 1) ws.send(JSON.stringify(message));
 }
 
-function cleanupExpired() {
+function cleanupExpired(): void {
   const cutoff = Date.now() - config.gameExpiryMs;
   const expired = db.getExpiredWaitingGames(cutoff);
   for (const { id } of expired) {
@@ -251,20 +265,18 @@ function cleanupExpired() {
   }
 }
 
-function cleanupOldGames() {
+function cleanupOldGames(): void {
   const cutoff = Date.now() - config.retentionMs;
   db.deleteOldGames(cutoff);
 }
 
-function startCleanupInterval() {
+export function startCleanupInterval(): void {
   setInterval(cleanupExpired, config.cleanupIntervalMs);
-  // Run retention cleanup every hour
   setInterval(cleanupOldGames, 3600000);
-  // Also run once at startup
   cleanupOldGames();
 }
 
-function getGameState(gameId) {
+export function getGameState(gameId: string): GameState | null {
   const game = db.getGame(gameId);
   if (!game) return null;
   return {
@@ -281,22 +293,3 @@ function getGameState(gameId) {
     playerOName: game.player_o_name || 'Player O',
   };
 }
-
-module.exports = {
-  createGame,
-  joinGame,
-  makeMove,
-  createRematch,
-  acceptRematch,
-  getPlayerSymbol,
-  getActiveGame,
-  setConnection,
-  removeConnection,
-  broadcast,
-  sendTo,
-  cleanupExpired,
-  startCleanupInterval,
-  getGameState,
-  startDisconnectTimer,
-  clearDisconnectTimer,
-};

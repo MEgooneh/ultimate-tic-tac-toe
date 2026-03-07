@@ -17,6 +17,7 @@ Requires Node.js 22+ (24 recommended).
 
 ```sh
 npm install
+npm run build
 npm start
 ```
 

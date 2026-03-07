@@ -1,17 +1,32 @@
+type CellClickHandler = (boardIndex: number, cellIndex: number) => void;
+
+interface BoardRenderState {
+  boardState: (string | null)[][];
+  metaBoard: (string | null)[];
+  activeBoard: number;
+  currentTurn: string;
+  winner: string | null;
+}
+
 class BoardRenderer {
-  constructor(container, onCellClick) {
+  private container: HTMLElement;
+  private onCellClick: CellClickHandler;
+  private boardState: (string | null)[][] | null = null;
+  private metaBoard: (string | null)[] | null = null;
+  private activeBoard = -1;
+  mySymbol: string | null = null;
+  private currentTurn: string | null = null;
+  private winner: string | null = null;
+  private subBoards: HTMLDivElement[] = [];
+  private cells: HTMLButtonElement[][] = [];
+
+  constructor(container: HTMLElement, onCellClick: CellClickHandler) {
     this.container = container;
     this.onCellClick = onCellClick;
-    this.boardState = null;
-    this.metaBoard = null;
-    this.activeBoard = -1;
-    this.mySymbol = null;
-    this.currentTurn = null;
-    this.winner = null;
     this._build();
   }
 
-  _build() {
+  private _build(): void {
     this.container.innerHTML = '';
     this.subBoards = [];
     this.cells = [];
@@ -19,7 +34,7 @@ class BoardRenderer {
     for (let bi = 0; bi < 9; bi++) {
       const subBoard = document.createElement('div');
       subBoard.className = 'sub-board';
-      subBoard.dataset.board = bi;
+      subBoard.dataset.board = String(bi);
 
       const subBoardInner = document.createElement('div');
       subBoardInner.className = 'sub-board-inner';
@@ -28,12 +43,12 @@ class BoardRenderer {
       wonOverlay.className = 'won-overlay';
       subBoard.appendChild(wonOverlay);
 
-      const cellsForBoard = [];
+      const cellsForBoard: HTMLButtonElement[] = [];
       for (let ci = 0; ci < 9; ci++) {
         const cell = document.createElement('button');
         cell.className = 'cell';
-        cell.dataset.board = bi;
-        cell.dataset.cell = ci;
+        cell.dataset.board = String(bi);
+        cell.dataset.cell = String(ci);
         cell.addEventListener('click', () => {
           if (this.onCellClick) this.onCellClick(bi, ci);
         });
@@ -48,7 +63,7 @@ class BoardRenderer {
     }
   }
 
-  update(state) {
+  update(state: BoardRenderState): void {
     this.boardState = state.boardState;
     this.metaBoard = state.metaBoard;
     this.activeBoard = state.activeBoard;
@@ -57,11 +72,13 @@ class BoardRenderer {
     this._render();
   }
 
-  setMySymbol(symbol) {
+  setMySymbol(symbol: string): void {
     this.mySymbol = symbol;
   }
 
-  _render() {
+  private _render(): void {
+    if (!this.boardState || !this.metaBoard) return;
+
     const isMyTurn = this.currentTurn === this.mySymbol && !this.winner;
 
     for (let bi = 0; bi < 9; bi++) {
@@ -76,7 +93,7 @@ class BoardRenderer {
       subBoard.classList.toggle('won-draw', metaResult === 'draw');
       subBoard.classList.toggle('resolved', metaResult !== null);
 
-      const wonOverlay = subBoard.querySelector('.won-overlay');
+      const wonOverlay = subBoard.querySelector('.won-overlay') as HTMLElement;
       if (metaResult === 'X') {
         wonOverlay.textContent = 'X';
         wonOverlay.className = 'won-overlay show x';
@@ -109,7 +126,7 @@ class BoardRenderer {
     }
   }
 
-  animateMove(boardIndex, cellIndex, symbol) {
+  animateMove(boardIndex: number, cellIndex: number, _symbol: string): void {
     const cell = this.cells[boardIndex][cellIndex];
     cell.classList.add('just-placed');
     setTimeout(() => cell.classList.remove('just-placed'), 400);

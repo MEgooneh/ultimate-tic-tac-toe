@@ -1,54 +1,50 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const gameId = window.location.pathname.split('/').pop();
+  const gameId = window.location.pathname.split('/').pop()!;
   const token = getPlayerToken();
   const playerName = getPlayerName() || 'Player';
 
-  // DOM elements
-  const gameCodeEl = document.getElementById('gameCode');
-  const copiedMsg = document.getElementById('copiedMsg');
-  const indicatorX = document.getElementById('indicatorX');
-  const indicatorO = document.getElementById('indicatorO');
-  const playerXNameEl = document.getElementById('playerXName');
-  const playerONameEl = document.getElementById('playerOName');
-  const statusBar = document.getElementById('statusBar');
-  const waitingOverlay = document.getElementById('waitingOverlay');
-  const waitingCode = document.getElementById('waitingCode');
-  const shareLink = document.getElementById('shareLink');
-  const copyLinkBtn = document.getElementById('copyLinkBtn');
-  const countdownTimer = document.getElementById('countdownTimer');
-  const gameOverOverlay = document.getElementById('gameOverOverlay');
-  const resultIcon = document.getElementById('resultIcon');
-  const resultTitle = document.getElementById('resultTitle');
-  const resultSubtitle = document.getElementById('resultSubtitle');
-  const rematchBtn = document.getElementById('rematchBtn');
-  const newGameBtn = document.getElementById('newGameBtn');
-  const rematchToast = document.getElementById('rematchToast');
-  const acceptRematchBtn = document.getElementById('acceptRematchBtn');
-  const declineRematchBtn = document.getElementById('declineRematchBtn');
-  const metaBoardEl = document.getElementById('metaBoard');
+  const gameCodeEl = document.getElementById('gameCode') as HTMLElement;
+  const copiedMsg = document.getElementById('copiedMsg') as HTMLElement;
+  const indicatorX = document.getElementById('indicatorX') as HTMLElement;
+  const indicatorO = document.getElementById('indicatorO') as HTMLElement;
+  const playerXNameEl = document.getElementById('playerXName') as HTMLElement;
+  const playerONameEl = document.getElementById('playerOName') as HTMLElement;
+  const statusBar = document.getElementById('statusBar') as HTMLElement;
+  const waitingOverlay = document.getElementById('waitingOverlay') as HTMLElement;
+  const waitingCode = document.getElementById('waitingCode') as HTMLElement;
+  const shareLink = document.getElementById('shareLink') as HTMLInputElement;
+  const copyLinkBtn = document.getElementById('copyLinkBtn') as HTMLButtonElement;
+  const countdownTimer = document.getElementById('countdownTimer') as HTMLElement;
+  const gameOverOverlay = document.getElementById('gameOverOverlay') as HTMLElement;
+  const resultIcon = document.getElementById('resultIcon') as HTMLElement;
+  const resultTitle = document.getElementById('resultTitle') as HTMLElement;
+  const resultSubtitle = document.getElementById('resultSubtitle') as HTMLElement;
+  const rematchBtn = document.getElementById('rematchBtn') as HTMLButtonElement;
+  const newGameBtn = document.getElementById('newGameBtn') as HTMLButtonElement;
+  const rematchToast = document.getElementById('rematchToast') as HTMLElement;
+  const acceptRematchBtn = document.getElementById('acceptRematchBtn') as HTMLButtonElement;
+  const declineRematchBtn = document.getElementById('declineRematchBtn') as HTMLButtonElement;
+  const metaBoardEl = document.getElementById('metaBoard') as HTMLElement;
 
-  let mySymbol = null;
-  let gameState = null;
-  let countdownInterval = null;
-  let pendingRematchId = null;
-  let disconnectCountdownInterval = null;
+  let mySymbol: string | null = null;
+  let gameState: Record<string, any> | null = null;
+  let countdownInterval: ReturnType<typeof setInterval> | null = null;
+  let pendingRematchId: string | null = null;
+  let disconnectCountdownInterval: ReturnType<typeof setInterval> | null = null;
 
-  // Setup game code display
   gameCodeEl.textContent = gameId;
   gameCodeEl.addEventListener('click', () => copyToClipboard(gameId, copiedMsg));
 
-  // Board renderer
-  const board = new BoardRenderer(metaBoardEl, (boardIndex, cellIndex) => {
+  const board = new BoardRenderer(metaBoardEl, (boardIndex: number, cellIndex: number) => {
     ws.send({ type: 'move', boardIndex, cellIndex });
   });
 
-  // WebSocket
   const ws = new WsClient(gameId, token, playerName);
 
-  ws.on('game_state', (data) => {
+  ws.on('game_state', (data: any) => {
     gameState = data;
     mySymbol = data.yourSymbol;
-    board.setMySymbol(mySymbol);
+    board.setMySymbol(mySymbol!);
     board.update(data);
     updateIndicators(data);
     updateStatus(data);
@@ -62,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  ws.on('game_started', (data) => {
+  ws.on('game_started', (data: any) => {
     gameState = data;
     waitingOverlay.hidden = true;
     clearCountdown();
@@ -71,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStatus(data);
   });
 
-  ws.on('move_made', (data) => {
+  ws.on('move_made', (data: any) => {
     gameState = {
       ...gameState,
       boardState: data.boardState,
@@ -79,19 +75,19 @@ document.addEventListener('DOMContentLoaded', () => {
       activeBoard: data.activeBoard,
       currentTurn: data.symbol === 'X' ? 'O' : 'X',
     };
-    board.update(gameState);
+    board.update(gameState as any);
     board.animateMove(data.boardIndex, data.cellIndex, data.symbol);
-    updateIndicators(gameState);
-    updateStatus(gameState);
+    updateIndicators(gameState!);
+    updateStatus(gameState!);
   });
 
-  ws.on('invalid_move', (data) => {
+  ws.on('invalid_move', (data: any) => {
     statusBar.textContent = data.reason;
     statusBar.className = 'status-bar';
     setTimeout(() => updateStatus(gameState), 2000);
   });
 
-  ws.on('game_over', (data) => {
+  ws.on('game_over', (data: any) => {
     clearDisconnectCountdown();
     if (gameState) {
       gameState.winner = data.winner;
@@ -100,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showGameOver(data.winner, data.forfeit);
   });
 
-  ws.on('opponent_disconnected', (data) => {
+  ws.on('opponent_disconnected', (data: any) => {
     clearDisconnectCountdown();
     if (data && data.forfeitIn) {
       const expiresAt = Date.now() + data.forfeitIn;
@@ -130,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusBar.className = 'status-bar';
   });
 
-  ws.on('rematch_offered', (data) => {
+  ws.on('rematch_offered', (data: any) => {
     pendingRematchId = data.newGameId;
     if (data.byYou) {
       rematchBtn.disabled = true;
@@ -140,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  ws.on('rematch_accepted', (data) => {
+  ws.on('rematch_accepted', (data: any) => {
     window.location.href = `/game/${data.newGameId}`;
   });
 
@@ -151,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusBar.className = 'status-bar';
   });
 
-  ws.on('error', (data) => {
+  ws.on('error', (data: any) => {
     console.error('WS error:', data.message);
   });
 
@@ -166,8 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   ws.connect();
 
-  // Waiting overlay
-  function showWaiting() {
+  function showWaiting(): void {
     waitingOverlay.hidden = false;
     waitingCode.textContent = gameId;
     const link = `${getBaseUrl()}/game/${gameId}`;
@@ -182,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  function startCountdown() {
+  function startCountdown(): void {
     clearCountdown();
     const expiresAt = Date.now() + 10 * 60 * 1000;
     countdownInterval = setInterval(() => {
@@ -194,15 +189,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 
-  function clearCountdown() {
+  function clearCountdown(): void {
     if (countdownInterval) {
       clearInterval(countdownInterval);
       countdownInterval = null;
     }
   }
 
-  // Status updates
-  function updateStatus(state) {
+  function updateStatus(state: any): void {
     if (!state) return;
     if (state.status === 'waiting') {
       statusBar.textContent = 'Waiting for opponent...';
@@ -218,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function updateIndicators(state) {
+  function updateIndicators(state: any): void {
     indicatorX.classList.toggle('active', state.currentTurn === 'X');
     indicatorO.classList.toggle('active', state.currentTurn === 'O');
     indicatorX.classList.toggle('you', mySymbol === 'X');
@@ -227,8 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (state.playerOName) playerONameEl.textContent = state.playerOName;
   }
 
-  // Game over
-  function showGameOver(winner, forfeit) {
+  function showGameOver(winner: string, forfeit?: boolean): void {
     gameOverOverlay.hidden = false;
     if (winner === 'draw') {
       resultIcon.textContent = '🤝';
@@ -247,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function clearDisconnectCountdown() {
+  function clearDisconnectCountdown(): void {
     if (disconnectCountdownInterval) {
       clearInterval(disconnectCountdownInterval);
       disconnectCountdownInterval = null;
@@ -274,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingRematchId = null;
   });
 
-  function copyToClipboard(text, feedbackEl) {
+  function copyToClipboard(text: string, feedbackEl: HTMLElement): void {
     navigator.clipboard.writeText(text).then(() => {
       feedbackEl.classList.add('show');
       setTimeout(() => feedbackEl.classList.remove('show'), 1500);

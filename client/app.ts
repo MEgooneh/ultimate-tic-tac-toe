@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const startBtn = document.getElementById('startGameBtn');
-  const joinBtn = document.getElementById('joinGameBtn');
-  const codeInput = document.getElementById('gameCodeInput');
-  const nameInput = document.getElementById('playerNameInput');
-  const errorMsg = document.getElementById('errorMsg');
+  const startBtn = document.getElementById('startGameBtn') as HTMLButtonElement;
+  const joinBtn = document.getElementById('joinGameBtn') as HTMLButtonElement;
+  const codeInput = document.getElementById('gameCodeInput') as HTMLInputElement;
+  const nameInput = document.getElementById('playerNameInput') as HTMLInputElement;
+  const errorMsg = document.getElementById('errorMsg') as HTMLElement;
   const token = getPlayerToken();
 
-  // Restore saved name
   nameInput.value = getPlayerName();
 
   startBtn.addEventListener('click', async () => {
@@ -26,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       window.location.href = `/game/${data.gameId}`;
-    } catch (e) {
+    } catch {
       showError(errorMsg, 'Failed to create game. Please try again.');
     } finally {
       startBtn.disabled = false;
@@ -35,11 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   joinBtn.addEventListener('click', () => joinGame());
-  codeInput.addEventListener('keydown', (e) => {
+  codeInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') joinGame();
   });
 
-  async function joinGame() {
+  async function joinGame(): Promise<void> {
     const code = codeInput.value.trim();
     if (!code) {
       showError(errorMsg, 'Please enter a game code.');
@@ -56,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       window.location.href = `/game/${code}`;
-    } catch (e) {
+    } catch {
       showError(errorMsg, 'Game not found. Check the code and try again.');
     } finally {
       joinBtn.disabled = false;
