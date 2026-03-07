@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showError(errorMsg, 'Please enter a game code.');
       return;
     }
+    const name = nameInput.value.trim() || 'Player';
+    setPlayerName(name);
     joinBtn.disabled = true;
     try {
       const res = await fetch(`/api/games/${code}`);

@@ -607,6 +607,9 @@ h1 {
 
 /* Back button */
 .back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   background: none;
   border: none;
   color: var(--color-text-dim);
@@ -615,10 +618,15 @@ h1 {
   font-family: var(--font-main);
   padding: 0.3rem;
   transition: color var(--transition);
+  text-decoration: none;
 }
 
 .back-btn:hover {
   color: var(--color-text);
+}
+
+.back-btn svg {
+  flex-shrink: 0;
 }
 
 /* Selection disabled during game */
