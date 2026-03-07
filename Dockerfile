@@ -1,18 +1,13 @@
-FROM node:22-slim
+FROM node:24-slim
 
 RUN groupadd --system app && useradd --system --gid app app
 
 WORKDIR /app
 
-COPY node_modules/ ./node_modules/
-COPY tsconfig.json tsconfig.client.json package.json ./
-COPY server/ ./server/
-COPY client/ ./client/
+COPY dist/ ./dist/
 COPY public/ ./public/
-
-RUN npx tsc && npx tsc -p tsconfig.client.json \
-    && rm -rf server/ client/ tsconfig*.json \
-       node_modules/typescript node_modules/@types
+COPY prod_modules/ ./node_modules/
+COPY package.json ./
 
 RUN mkdir -p /app/data && chown -R app:app /app/data
 
