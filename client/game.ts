@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const gameId = window.location.pathname.split('/').pop()!;
   const token = getPlayerToken();
-  const playerName = getPlayerName() || 'Player';
 
   const gameCodeEl = document.getElementById('gameCode') as HTMLElement;
   const copiedMsg = document.getElementById('copiedMsg') as HTMLElement;
@@ -25,12 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const acceptRematchBtn = document.getElementById('acceptRematchBtn') as HTMLButtonElement;
   const declineRematchBtn = document.getElementById('declineRematchBtn') as HTMLButtonElement;
   const metaBoardEl = document.getElementById('metaBoard') as HTMLElement;
+  const nameOverlay = document.getElementById('nameOverlay') as HTMLElement;
+  const nameEntryInput = document.getElementById('nameEntryInput') as HTMLInputElement;
+  const nameEntryBtn = document.getElementById('nameEntryBtn') as HTMLButtonElement;
 
   let mySymbol: string | null = null;
   let gameState: Record<string, any> | null = null;
   let countdownInterval: ReturnType<typeof setInterval> | null = null;
   let pendingRematchId: string | null = null;
   let disconnectCountdownInterval: ReturnType<typeof setInterval> | null = null;
+  let ws: WsClient;
 
   gameCodeEl.textContent = gameId;
   gameCodeEl.addEventListener('click', () => copyToClipboard(gameId, copiedMsg));
@@ -39,7 +42,35 @@ document.addEventListener('DOMContentLoaded', () => {
     ws.send({ type: 'move', boardIndex, cellIndex });
   });
 
-  const ws = new WsClient(gameId, token, playerName);
+  // If the player has no saved name, prompt before connecting.
+  // Players coming from the landing page already have a name saved.
+  // Players arriving via a shared link won't — show the name popup.
+  const savedName = getPlayerName();
+  if (savedName) {
+    startGame(savedName);
+  } else {
+    nameOverlay.hidden = false;
+    nameEntryInput.focus();
+    nameEntryBtn.addEventListener('click', submitName);
+    nameEntryInput.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') submitName();
+    });
+  }
+
+  function submitName(): void {
+    const name = nameEntryInput.value.trim() || 'Player';
+    setPlayerName(name);
+    nameOverlay.hidden = true;
+    startGame(name);
+  }
+
+  function startGame(playerName: string): void {
+    ws = new WsClient(gameId, token, playerName);
+    setupWsHandlers();
+    ws.connect();
+  }
+
+  function setupWsHandlers(): void {
 
   ws.on('game_state', (data: any) => {
     gameState = data;
@@ -160,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gameState) updateStatus(gameState);
   });
 
-  ws.connect();
+  } // end setupWsHandlers
 
   function showWaiting(): void {
     waitingOverlay.hidden = false;

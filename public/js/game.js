@@ -2,7 +2,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const gameId = window.location.pathname.split('/').pop();
     const token = getPlayerToken();
-    const playerName = getPlayerName() || 'Player';
     const gameCodeEl = document.getElementById('gameCode');
     const copiedMsg = document.getElementById('copiedMsg');
     const indicatorX = document.getElementById('indicatorX');
@@ -25,129 +24,160 @@ document.addEventListener('DOMContentLoaded', () => {
     const acceptRematchBtn = document.getElementById('acceptRematchBtn');
     const declineRematchBtn = document.getElementById('declineRematchBtn');
     const metaBoardEl = document.getElementById('metaBoard');
+    const nameOverlay = document.getElementById('nameOverlay');
+    const nameEntryInput = document.getElementById('nameEntryInput');
+    const nameEntryBtn = document.getElementById('nameEntryBtn');
     let mySymbol = null;
     let gameState = null;
     let countdownInterval = null;
     let pendingRematchId = null;
     let disconnectCountdownInterval = null;
+    let ws;
     gameCodeEl.textContent = gameId;
     gameCodeEl.addEventListener('click', () => copyToClipboard(gameId, copiedMsg));
     const board = new BoardRenderer(metaBoardEl, (boardIndex, cellIndex) => {
         ws.send({ type: 'move', boardIndex, cellIndex });
     });
-    const ws = new WsClient(gameId, token, playerName);
-    ws.on('game_state', (data) => {
-        gameState = data;
-        mySymbol = data.yourSymbol;
-        board.setMySymbol(mySymbol);
-        board.update(data);
-        updateIndicators(data);
-        updateStatus(data);
-        if (data.status === 'waiting') {
-            showWaiting();
-        }
-        else if (data.status === 'finished') {
-            showGameOver(data.winner);
-        }
-        else {
+    // If the player has no saved name, prompt before connecting.
+    // Players coming from the landing page already have a name saved.
+    // Players arriving via a shared link won't — show the name popup.
+    const savedName = getPlayerName();
+    if (savedName) {
+        startGame(savedName);
+    }
+    else {
+        nameOverlay.hidden = false;
+        nameEntryInput.focus();
+        nameEntryBtn.addEventListener('click', submitName);
+        nameEntryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter')
+                submitName();
+        });
+    }
+    function submitName() {
+        const name = nameEntryInput.value.trim() || 'Player';
+        setPlayerName(name);
+        nameOverlay.hidden = true;
+        startGame(name);
+    }
+    function startGame(playerName) {
+        ws = new WsClient(gameId, token, playerName);
+        setupWsHandlers();
+        ws.connect();
+    }
+    function setupWsHandlers() {
+        ws.on('game_state', (data) => {
+            gameState = data;
+            mySymbol = data.yourSymbol;
+            board.setMySymbol(mySymbol);
+            board.update(data);
+            updateIndicators(data);
+            updateStatus(data);
+            if (data.status === 'waiting') {
+                showWaiting();
+            }
+            else if (data.status === 'finished') {
+                showGameOver(data.winner);
+            }
+            else {
+                waitingOverlay.hidden = true;
+            }
+        });
+        ws.on('game_started', (data) => {
+            gameState = data;
             waitingOverlay.hidden = true;
-        }
-    });
-    ws.on('game_started', (data) => {
-        gameState = data;
-        waitingOverlay.hidden = true;
-        clearCountdown();
-        board.update(data);
-        updateIndicators(data);
-        updateStatus(data);
-    });
-    ws.on('move_made', (data) => {
-        gameState = {
-            ...gameState,
-            boardState: data.boardState,
-            metaBoard: data.metaBoard,
-            activeBoard: data.activeBoard,
-            currentTurn: data.symbol === 'X' ? 'O' : 'X',
-        };
-        board.update(gameState);
-        board.animateMove(data.boardIndex, data.cellIndex, data.symbol);
-        updateIndicators(gameState);
-        updateStatus(gameState);
-    });
-    ws.on('invalid_move', (data) => {
-        statusBar.textContent = data.reason;
-        statusBar.className = 'status-bar';
-        setTimeout(() => updateStatus(gameState), 2000);
-    });
-    ws.on('game_over', (data) => {
-        clearDisconnectCountdown();
-        if (gameState) {
-            gameState.winner = data.winner;
-            gameState.status = 'finished';
-        }
-        showGameOver(data.winner, data.forfeit);
-    });
-    ws.on('opponent_disconnected', (data) => {
-        clearDisconnectCountdown();
-        if (data && data.forfeitIn) {
-            const expiresAt = Date.now() + data.forfeitIn;
-            disconnectCountdownInterval = setInterval(() => {
-                const remaining = Math.max(0, expiresAt - Date.now());
-                const mins = Math.floor(remaining / 60000);
-                const secs = Math.floor((remaining % 60000) / 1000);
-                statusBar.textContent = `Opponent disconnected — forfeit in ${mins}:${secs.toString().padStart(2, '0')}`;
-                statusBar.className = 'status-bar';
-                if (remaining <= 0)
-                    clearDisconnectCountdown();
-            }, 1000);
-        }
-        else {
-            statusBar.textContent = 'Opponent disconnected...';
+            clearCountdown();
+            board.update(data);
+            updateIndicators(data);
+            updateStatus(data);
+        });
+        ws.on('move_made', (data) => {
+            gameState = {
+                ...gameState,
+                boardState: data.boardState,
+                metaBoard: data.metaBoard,
+                activeBoard: data.activeBoard,
+                currentTurn: data.symbol === 'X' ? 'O' : 'X',
+            };
+            board.update(gameState);
+            board.animateMove(data.boardIndex, data.cellIndex, data.symbol);
+            updateIndicators(gameState);
+            updateStatus(gameState);
+        });
+        ws.on('invalid_move', (data) => {
+            statusBar.textContent = data.reason;
             statusBar.className = 'status-bar';
-        }
-    });
-    ws.on('opponent_reconnected', () => {
-        clearDisconnectCountdown();
-        if (gameState)
-            updateStatus(gameState);
-    });
-    ws.on('game_expired', () => {
-        waitingOverlay.hidden = true;
-        clearCountdown();
-        statusBar.textContent = 'Game expired — no one joined';
-        statusBar.className = 'status-bar';
-    });
-    ws.on('rematch_offered', (data) => {
-        pendingRematchId = data.newGameId;
-        if (data.byYou) {
-            rematchBtn.disabled = true;
-            rematchBtn.textContent = 'Waiting...';
-        }
-        else {
-            rematchToast.classList.add('show');
-        }
-    });
-    ws.on('rematch_accepted', (data) => {
-        window.location.href = `/game/${data.newGameId}`;
-    });
-    ws.on('rematch_declined', () => {
-        rematchBtn.disabled = false;
-        rematchBtn.textContent = 'Play Again';
-        statusBar.textContent = 'Opponent declined the rematch';
-        statusBar.className = 'status-bar';
-    });
-    ws.on('error', (data) => {
-        console.error('WS error:', data.message);
-    });
-    ws.on('disconnected', () => {
-        statusBar.textContent = 'Reconnecting...';
-        statusBar.className = 'status-bar pulse';
-    });
-    ws.on('connected', () => {
-        if (gameState)
-            updateStatus(gameState);
-    });
-    ws.connect();
+            setTimeout(() => updateStatus(gameState), 2000);
+        });
+        ws.on('game_over', (data) => {
+            clearDisconnectCountdown();
+            if (gameState) {
+                gameState.winner = data.winner;
+                gameState.status = 'finished';
+            }
+            showGameOver(data.winner, data.forfeit);
+        });
+        ws.on('opponent_disconnected', (data) => {
+            clearDisconnectCountdown();
+            if (data && data.forfeitIn) {
+                const expiresAt = Date.now() + data.forfeitIn;
+                disconnectCountdownInterval = setInterval(() => {
+                    const remaining = Math.max(0, expiresAt - Date.now());
+                    const mins = Math.floor(remaining / 60000);
+                    const secs = Math.floor((remaining % 60000) / 1000);
+                    statusBar.textContent = `Opponent disconnected — forfeit in ${mins}:${secs.toString().padStart(2, '0')}`;
+                    statusBar.className = 'status-bar';
+                    if (remaining <= 0)
+                        clearDisconnectCountdown();
+                }, 1000);
+            }
+            else {
+                statusBar.textContent = 'Opponent disconnected...';
+                statusBar.className = 'status-bar';
+            }
+        });
+        ws.on('opponent_reconnected', () => {
+            clearDisconnectCountdown();
+            if (gameState)
+                updateStatus(gameState);
+        });
+        ws.on('game_expired', () => {
+            waitingOverlay.hidden = true;
+            clearCountdown();
+            statusBar.textContent = 'Game expired — no one joined';
+            statusBar.className = 'status-bar';
+        });
+        ws.on('rematch_offered', (data) => {
+            pendingRematchId = data.newGameId;
+            if (data.byYou) {
+                rematchBtn.disabled = true;
+                rematchBtn.textContent = 'Waiting...';
+            }
+            else {
+                rematchToast.classList.add('show');
+            }
+        });
+        ws.on('rematch_accepted', (data) => {
+            window.location.href = `/game/${data.newGameId}`;
+        });
+        ws.on('rematch_declined', () => {
+            rematchBtn.disabled = false;
+            rematchBtn.textContent = 'Play Again';
+            statusBar.textContent = 'Opponent declined the rematch';
+            statusBar.className = 'status-bar';
+        });
+        ws.on('error', (data) => {
+            console.error('WS error:', data.message);
+        });
+        ws.on('disconnected', () => {
+            statusBar.textContent = 'Reconnecting...';
+            statusBar.className = 'status-bar pulse';
+        });
+        ws.on('connected', () => {
+            if (gameState)
+                updateStatus(gameState);
+        });
+    } // end setupWsHandlers
     function showWaiting() {
         waitingOverlay.hidden = false;
         waitingCode.textContent = gameId;

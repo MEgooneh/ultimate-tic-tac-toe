@@ -351,6 +351,18 @@ h1 {
   color: var(--color-text-muted);
 }
 
+/* Name Entry (Game Page join popup) */
+.name-entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.name-entry-form .name-input {
+  text-align: center;
+  font-size: 1.1rem;
+}
+
 /* Game Page Layout */
 .game-container {
   min-height: 100dvh;
