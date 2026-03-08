@@ -43,6 +43,7 @@ const ws_1 = require("ws");
 const config_1 = __importDefault(require("./config"));
 const db = __importStar(require("./db"));
 const routes_1 = __importDefault(require("./routes"));
+const admin_1 = __importDefault(require("./admin"));
 const ws_handler_1 = require("./ws-handler");
 const gm = __importStar(require("./game-manager"));
 db.init();
@@ -59,8 +60,12 @@ app.use(express_1.default.static(path_1.default.join(__dirname, '..', 'public'),
     maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
 }));
 app.use(routes_1.default);
+app.use(admin_1.default);
 app.get('/game/:id', (_req, res) => {
     res.sendFile(path_1.default.join(__dirname, '..', 'public', 'game.html'));
+});
+app.get('/admin', (_req, res) => {
+    res.sendFile(path_1.default.join(__dirname, '..', 'public', 'admin.html'));
 });
 const server = http_1.default.createServer(app);
 const wss = new ws_1.WebSocketServer({

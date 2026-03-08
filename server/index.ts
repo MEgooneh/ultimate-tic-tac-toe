@@ -5,6 +5,7 @@ import { WebSocketServer } from 'ws';
 import config from './config';
 import * as db from './db';
 import routes from './routes';
+import adminRoutes from './admin';
 import { setupWebSocket } from './ws-handler';
 import * as gm from './game-manager';
 
@@ -27,9 +28,14 @@ app.use(express.static(path.join(__dirname, '..', 'public'), {
   maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
 }));
 app.use(routes);
+app.use(adminRoutes);
 
 app.get('/game/:id', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'game.html'));
+});
+
+app.get('/admin', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
 const server = http.createServer(app);

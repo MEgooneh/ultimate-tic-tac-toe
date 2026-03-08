@@ -10,6 +10,11 @@ exports.updateGame = updateGame;
 exports.getExpiredWaitingGames = getExpiredWaitingGames;
 exports.deleteOldGames = deleteOldGames;
 exports.getDbSizeInfo = getDbSizeInfo;
+exports.getStatsOverview = getStatsOverview;
+exports.getGamesTimeSeries = getGamesTimeSeries;
+exports.getFinishedTimeSeries = getFinishedTimeSeries;
+exports.getGamesList = getGamesList;
+exports.getHourlyDistribution = getHourlyDistribution;
 exports.close = close;
 const node_sqlite_1 = require("node:sqlite");
 const config_1 = __importDefault(require("./config"));
@@ -76,6 +81,82 @@ function deleteOldGames(cutoffTs) {
 function getDbSizeInfo() {
     const stmt = getDb().prepare('SELECT COUNT(*) as count FROM games');
     return stmt.get();
+}
+function getStatsOverview() {
+    const d = getDb();
+    const totals = d.prepare(`
+    SELECT
+      COUNT(*) as totalGames,
+      SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) as activeGames,
+      SUM(CASE WHEN status='finished' THEN 1 ELSE 0 END) as finishedGames,
+      SUM(CASE WHEN status='waiting' THEN 1 ELSE 0 END) as waitingGames,
+      SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) as expiredGames,
+      SUM(CASE WHEN winner='X' THEN 1 ELSE 0 END) as xWins,
+      SUM(CASE WHEN winner='O' THEN 1 ELSE 0 END) as oWins,
+      SUM(CASE WHEN winner='draw' THEN 1 ELSE 0 END) as draws
+    FROM games
+  `).get();
+    const avg = d.prepare(`
+    SELECT AVG(finished_at - created_at) as avgDur
+    FROM games WHERE status='finished' AND finished_at IS NOT NULL
+  `).get();
+    return {
+        totalGames: totals.totalGames ?? 0,
+        activeGames: totals.activeGames ?? 0,
+        finishedGames: totals.finishedGames ?? 0,
+        waitingGames: totals.waitingGames ?? 0,
+        expiredGames: totals.expiredGames ?? 0,
+        xWins: totals.xWins ?? 0,
+        oWins: totals.oWins ?? 0,
+        draws: totals.draws ?? 0,
+        avgGameDurationMs: avg.avgDur ?? null,
+    };
+}
+function getGamesTimeSeries(days = 30) {
+    const d = getDb();
+    const cutoff = Date.now() - days * 86400000;
+    return d.prepare(`
+    SELECT
+      date(created_at / 1000, 'unixepoch') as date,
+      COUNT(*) as count
+    FROM games
+    WHERE created_at > ?
+    GROUP BY date
+    ORDER BY date ASC
+  `).all(cutoff);
+}
+function getFinishedTimeSeries(days = 30) {
+    const d = getDb();
+    const cutoff = Date.now() - days * 86400000;
+    return d.prepare(`
+    SELECT
+      date(finished_at / 1000, 'unixepoch') as date,
+      COUNT(*) as count
+    FROM games
+    WHERE finished_at IS NOT NULL AND finished_at > ?
+    GROUP BY date
+    ORDER BY date ASC
+  `).all(cutoff);
+}
+function getGamesList(page, pageSize = 20) {
+    const d = getDb();
+    const total = d.prepare('SELECT COUNT(*) as c FROM games').get().c;
+    const offset = (page - 1) * pageSize;
+    const games = d.prepare(`
+    SELECT id, status, player_x_name, player_o_name, winner, created_at, finished_at
+    FROM games ORDER BY created_at DESC LIMIT ? OFFSET ?
+  `).all(pageSize, offset);
+    return { games, total };
+}
+function getHourlyDistribution() {
+    const d = getDb();
+    return d.prepare(`
+    SELECT
+      CAST(strftime('%H', created_at / 1000, 'unixepoch') AS INTEGER) as hour,
+      COUNT(*) as count
+    FROM games
+    GROUP BY hour ORDER BY hour
+  `).all();
 }
 function close() {
     if (db)

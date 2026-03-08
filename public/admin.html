@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Ultimate Tic-Tac-Toe</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ── Admin Layout ─────────────────────────────────── */
+    .admin-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      min-height: 100dvh;
+    }
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .admin-header h1 { font-size: 1.6rem; }
+    .admin-header .btn { padding: 0.45rem 1rem; font-size: 0.85rem; }
+
+    /* ── Login ─────────────────────────────────────────── */
+    .login-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+    }
+    .login-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      width: 360px;
+      max-width: 90%;
+    }
+    .login-card h2 { margin-bottom: 0.4rem; }
+    .login-card p { color: var(--color-text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--color-text-dim);
+      margin-bottom: 0.3rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .form-group input:focus {
+      border-color: var(--color-o);
+      box-shadow: 0 0 0 3px var(--color-o-light);
+    }
+    .login-error {
+      background: var(--color-x-light);
+      color: var(--color-x);
+      padding: 0.5rem 0.8rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    /* ── Stats Cards ──────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.2rem;
+    }
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-card .stat-label {
+      font-size: 0.78rem;
+      color: var(--color-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.15rem;
+    }
+    .stat-x { color: var(--color-x); }
+    .stat-o { color: var(--color-o); }
+    .stat-draw { color: var(--color-draw); }
+    .stat-active { color: var(--color-success); }
+
+    /* ── Charts ────────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .chart-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+    .chart-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--color-text-dim);
+    }
+    .chart-area {
+      position: relative;
+      height: 200px;
+    }
+    canvas { width: 100% !important; height: 100% !important; }
+
+    /* ── Outcome donut ────────────────────────────────── */
+    .outcome-section {
+      margin-bottom: 2rem;
+    }
+    .outcome-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+    .outcome-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--color-text-dim);
+    }
+    .donut-wrap { width: 180px; height: 180px; flex-shrink: 0; }
+    .outcome-legend { flex: 1; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-count { font-weight: 700; margin-left: auto; }
+
+    /* ── Games Table ───────────────────────────────────── */
+    .table-section h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    .table-wrap {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .table-scroll {
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead { position: sticky; top: 0; z-index: 2; }
+    th {
+      background: var(--color-surface-2);
+      padding: 0.65rem 0.9rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--color-text-dim);
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge-active   { background: rgba(46,204,113,.15); color: var(--color-success); }
+    .badge-finished { background: var(--color-o-light); color: var(--color-o); }
+    .badge-waiting  { background: var(--color-active-light); color: var(--color-active); }
+    .badge-expired  { background: rgba(255,255,255,.06); color: var(--color-text-muted); }
+
+    .winner-x { color: var(--color-x); font-weight: 700; }
+    .winner-o { color: var(--color-o); font-weight: 700; }
+    .winner-draw { color: var(--color-draw); font-weight: 600; }
+
+    /* ── Pagination ────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--color-border);
+      font-size: 0.82rem;
+      color: var(--color-text-dim);
+    }
+    .pagination .pages { display: flex; gap: 0.3rem; }
+    .page-btn {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: var(--font-main);
+      transition: all var(--transition);
+    }
+    .page-btn:hover { background: var(--color-border); }
+    .page-btn.active {
+      background: var(--color-o);
+      color: #fff;
+      border-color: var(--color-o);
+    }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Loading ───────────────────────────────────────── */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 3rem;
+      color: var(--color-text-dim);
+    }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .charts-row { grid-template-columns: 1fr; }
+      .outcome-card { flex-direction: column; }
+      .donut-wrap { width: 150px; height: 150px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login View -->
+<div id="loginView" class="login-wrap">
+  <div class="login-card">
+    <h2>Admin Login</h2>
+    <p>Enter your credentials to access the dashboard</p>
+    <div id="loginError" class="login-error"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-large" id="loginBtn" style="margin-top:.5rem">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- Dashboard View -->
+<div id="dashboardView" class="admin-wrap" style="display:none">
+  <div class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+  </div>
+
+  <div id="dashLoading" class="loading"><span class="spinner"></span> Loading stats...</div>
+
+  <div id="dashContent" style="display:none">
+    <!-- Stats Cards -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Games Created (last 30 days)</h3>
+        <div class="chart-area"><canvas id="createdChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Games Finished (last 30 days)</h3>
+        <div class="chart-area"><canvas id="finishedChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Hourly Activity</h3>
+        <div class="chart-area"><canvas id="hourlyChart"></canvas></div>
+      </div>
+      <div class="outcome-card">
+        <div>
+          <h3>Game Outcomes</h3>
+          <div class="donut-wrap"><canvas id="outcomeChart"></canvas></div>
+        </div>
+        <div class="outcome-legend" id="outcomeLegend"></div>
+      </div>
+    </div>
+
+    <!-- Games Table -->
+    <div class="table-section">
+      <h3>All Games</h3>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Player X</th>
+                <th>Player O</th>
+                <th>Winner</th>
+                <th>Created</th>
+                <th>Finished</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody id="gamesBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+
+  let token = sessionStorage.getItem('admin_token');
+  let currentPage = 1;
+  const PAGE_SIZE = 20;
+
+  /* ── Auth helpers ────────────────────────────────── */
+  async function api(path, opts = {}) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(path, { ...opts, headers });
+    if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || 'Request failed');
+    }
+    return res.json();
+  }
+
+  function showLogin() {
+    $('loginView').style.display = '';
+    $('dashboardView').style.display = 'none';
+  }
+  function showDash() {
+    $('loginView').style.display = 'none';
+    $('dashboardView').style.display = '';
+    loadDashboard();
+  }
+  function logout() {
+    token = null;
+    sessionStorage.removeItem('admin_token');
+    showLogin();
+  }
+
+  /* ── Login ───────────────────────────────────────── */
+  $('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('loginBtn');
+    const errEl = $('loginError');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    try {
+      const data = await api('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: $('username').value,
+          password: $('password').value,
+        }),
+      });
+      token = data.token;
+      sessionStorage.setItem('admin_token', token);
+      showDash();
+    } catch (err) {
+      errEl.textContent = err.message || 'Login failed';
+      errEl.style.display = '';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  });
+
+  $('logoutBtn').addEventListener('click', logout);
+
+  /* ── Dashboard ───────────────────────────────────── */
+  async function loadDashboard() {
+    $('dashLoading').style.display = '';
+    $('dashContent').style.display = 'none';
+    try {
+      const [stats, gamesList] = await Promise.all([
+        api('/api/admin/stats'),
+        api('/api/admin/games?page=1&pageSize=' + PAGE_SIZE),
+      ]);
+      $('dashLoading').style.display = 'none';
+      $('dashContent').style.display = '';
+      renderStats(stats);
+      renderCharts(stats);
+      renderGames(gamesList);
+    } catch (err) {
+      $('dashLoading').innerHTML = '<span style="color:var(--color-x)">Failed to load: ' + err.message + '</span>';
+    }
+  }
+
+  /* ── Stats Cards ─────────────────────────────────── */
+  function renderStats(stats) {
+    const o = stats.overview;
+    const avgDur = o.avgGameDurationMs ? formatDuration(o.avgGameDurationMs) : '—';
+    const cards = [
+      { value: o.totalGames, label: 'Total Games', cls: '' },
+      { value: o.activeGames, label: 'Active', cls: 'stat-active' },
+      { value: o.waitingGames, label: 'Waiting', cls: '' },
+      { value: o.finishedGames, label: 'Finished', cls: '' },
+      { value: o.xWins, label: 'X Wins', cls: 'stat-x' },
+      { value: o.oWins, label: 'O Wins', cls: 'stat-o' },
+      { value: o.draws, label: 'Draws', cls: 'stat-draw' },
+      { value: avgDur, label: 'Avg Duration', cls: '' },
+    ];
+    $('statsGrid').innerHTML = cards.map(c =>
+      '<div class="stat-card"><div class="stat-value ' + c.cls + '">' + c.value + '</div><div class="stat-label">' + c.label + '</div></div>'
+    ).join('');
+  }
+
+  /* ── Charts (pure canvas, no deps) ───────────────── */
+  function renderCharts(stats) {
+    drawLineChart($('createdChart'), stats.created, 'rgba(0,188,212,1)', 'rgba(0,188,212,0.1)');
+    drawLineChart($('finishedChart'), stats.finished, 'rgba(231,76,60,1)', 'rgba(231,76,60,0.1)');
+    drawBarChart($('hourlyChart'), stats.hourly);
+    drawDonut($('outcomeChart'), stats.overview);
+  }
+
+  function drawLineChart(canvas, data, strokeColor, fillColor) {
+    if (!data || !data.length) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = rect.height;
+    const pad = { top: 10, right: 10, bottom: 30, left: 40 };
+    const cW = W - pad.left - pad.right;
+    const cH = H - pad.top - pad.bottom;
+
+    const values = data.map(d => d.count);
+    const maxVal = Math.max(...values, 1);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.top + cH - (cH / 4) * i;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(maxVal / 4 * i).toString(), pad.left - 6, y + 3);
+    }
+
+    // Labels
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    const labelStep = Math.max(1, Math.floor(data.length / 6));
+    data.forEach((d, i) => {
+      if (i % labelStep === 0 || i === data.length - 1) {
+        const x = pad.left + (i / (data.length - 1 || 1)) * cW;
+        ctx.fillText(d.date.slice(5), x, H - 6);
+      }
+    });
+
+    // Line + fill
+    const points = data.map((d, i) => ({
+      x: pad.left + (i / (data.length - 1 || 1)) * cW,
+      y: pad.top + cH - (d.count / maxVal) * cH,
+    }));
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, pad.top + cH);
+    points.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(points[points.length - 1].x, pad.top + cH);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+
+    ctx.beginPath();
+    points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Dots
+    points.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = strokeColor;
+      ctx.fill();
+    });
+  }
+
+  function drawBarChart(canvas, data) {
+    if (!data || !data.length) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = rect.height;
+    const pad = { top: 10, right: 10, bottom: 30, left: 40 };
+    const cW = W - pad.left - pad.right;
+    const cH = H - pad.top - pad.bottom;
+
+    // Fill missing hours
+    const hourMap = new Map(data.map(d => [d.hour, d.count]));
+    const full = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: hourMap.get(i) || 0 }));
+    const maxVal = Math.max(...full.map(d => d.count), 1);
+    const barW = cW / 24 - 2;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.top + cH - (cH / 4) * i;
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(maxVal / 4 * i).toString(), pad.left - 6, y + 3);
+    }
+
+    full.forEach((d, i) => {
+      const x = pad.left + (i / 24) * cW + 1;
+      const h = (d.count / maxVal) * cH;
+      const y = pad.top + cH - h;
+
+      ctx.fillStyle = 'rgba(241,196,15,0.7)';
+      ctx.beginPath();
+      roundRect(ctx, x, y, barW, h, 2);
+      ctx.fill();
+
+      if (i % 3 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '9px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.hour + 'h', x + barW / 2, H - 8);
+      }
+    });
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    if (h < r * 2) r = h / 2;
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+  }
+
+  function drawDonut(canvas, overview) {
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    const size = Math.min(rect.width, rect.height);
+    const cx = rect.width / 2, cy = rect.height / 2;
+    const outer = size / 2 - 4, inner = outer * 0.6;
+
+    const segments = [
+      { label: 'X Wins', value: overview.xWins, color: '#e74c3c' },
+      { label: 'O Wins', value: overview.oWins, color: '#00bcd4' },
+      { label: 'Draws', value: overview.draws, color: '#95a5a6' },
+    ];
+    const total = segments.reduce((s, d) => s + d.value, 0) || 1;
+
+    let angle = -Math.PI / 2;
+    segments.forEach(seg => {
+      const sweep = (seg.value / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, outer, angle, angle + sweep);
+      ctx.arc(cx, cy, inner, angle + sweep, angle, true);
+      ctx.closePath();
+      ctx.fillStyle = seg.color;
+      ctx.fill();
+      angle += sweep;
+    });
+
+    // Center text
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.font = 'bold 20px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(total.toString(), cx, cy - 6);
+    ctx.font = '10px system-ui';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('finished', cx, cy + 12);
+
+    // Legend
+    $('outcomeLegend').innerHTML = segments.map(s =>
+      '<div class="legend-item"><span class="legend-dot" style="background:' + s.color + '"></span>' +
+      s.label + '<span class="legend-count">' + s.value + ' (' + Math.round(s.value / total * 100) + '%)</span></div>'
+    ).join('');
+  }
+
+  /* ── Games Table ─────────────────────────────────── */
+  function renderGames(data) {
+    const tbody = $('gamesBody');
+    tbody.innerHTML = data.games.map(g => {
+      const statusCls = 'badge-' + g.status;
+      let winnerHtml = '—';
+      if (g.winner === 'X') winnerHtml = '<span class="winner-x">X</span>';
+      else if (g.winner === 'O') winnerHtml = '<span class="winner-o">O</span>';
+      else if (g.winner === 'draw') winnerHtml = '<span class="winner-draw">Draw</span>';
+
+      const created = formatDate(g.created_at);
+      const finished = g.finished_at ? formatDate(g.finished_at) : '—';
+      const dur = g.finished_at ? formatDuration(g.finished_at - g.created_at) : '—';
+
+      return '<tr>' +
+        '<td><code style="font-size:0.8rem">' + g.id + '</code></td>' +
+        '<td><span class="badge ' + statusCls + '">' + g.status + '</span></td>' +
+        '<td>' + esc(g.player_x_name) + '</td>' +
+        '<td>' + esc(g.player_o_name || '—') + '</td>' +
+        '<td>' + winnerHtml + '</td>' +
+        '<td>' + created + '</td>' +
+        '<td>' + finished + '</td>' +
+        '<td>' + dur + '</td>' +
+        '</tr>';
+    }).join('');
+
+    renderPagination(data.total);
+  }
+
+  function renderPagination(total) {
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const pag = $('pagination');
+    if (totalPages <= 1) { pag.innerHTML = '<span>' + total + ' games</span><span></span>'; return; }
+
+    let html = '<span>Page ' + currentPage + ' of ' + totalPages + ' (' + total + ' games)</span><div class="pages">';
+    html += '<button class="page-btn" data-page="' + (currentPage - 1) + '"' + (currentPage === 1 ? ' disabled' : '') + '>&laquo;</button>';
+
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, currentPage + 2);
+    if (start > 1) html += '<button class="page-btn" data-page="1">1</button>';
+    if (start > 2) html += '<span style="padding:0 .3rem;color:var(--color-text-muted)">...</span>';
+    for (let p = start; p <= end; p++) {
+      html += '<button class="page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>';
+    }
+    if (end < totalPages - 1) html += '<span style="padding:0 .3rem;color:var(--color-text-muted)">...</span>';
+    if (end < totalPages) html += '<button class="page-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+
+    html += '<button class="page-btn" data-page="' + (currentPage + 1) + '"' + (currentPage === totalPages ? ' disabled' : '') + '>&raquo;</button>';
+    html += '</div>';
+    pag.innerHTML = html;
+
+    pag.querySelectorAll('.page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = parseInt(btn.dataset.page);
+        if (p >= 1 && p <= totalPages && p !== currentPage) {
+          currentPage = p;
+          loadPage(p);
+        }
+      });
+    });
+  }
+
+  async function loadPage(page) {
+    try {
+      const data = await api('/api/admin/games?page=' + page + '&pageSize=' + PAGE_SIZE);
+      renderGames(data);
+      document.querySelector('.table-scroll').scrollTop = 0;
+    } catch (err) { /* ignore */ }
+  }
+
+  /* ── Helpers ─────────────────────────────────────── */
+  function formatDate(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatDuration(ms) {
+    const s = Math.floor(ms / 1000);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + 'm ' + (s % 60) + 's';
+    const h = Math.floor(m / 60);
+    return h + 'h ' + (m % 60) + 'm';
+  }
+
+  function esc(str) {
+    const el = document.createElement('span');
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
+  /* ── Init ────────────────────────────────────────── */
+  if (token) showDash(); else showLogin();
+})();
+</script>
+</body>
+</html>
