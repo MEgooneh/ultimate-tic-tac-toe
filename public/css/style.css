@@ -250,7 +250,7 @@ h1 {
 }
 
 .how-to-play summary::before {
-  content: '? ';
+  content: '';
 }
 
 .how-to-play summary:hover {
@@ -293,12 +293,13 @@ h1 {
 
 /* Footer */
 .landing-footer {
-  position: fixed;
-  bottom: 1.5rem;
+  margin-top: 1.5rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   font-size: 0.85rem;
+  padding: 0.75rem;
 }
 
 .landing-footer a {

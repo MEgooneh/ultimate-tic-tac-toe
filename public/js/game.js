@@ -38,14 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const board = new BoardRenderer(metaBoardEl, (boardIndex, cellIndex) => {
         ws.send({ type: 'move', boardIndex, cellIndex });
     });
-    // If the player has no saved name, prompt before connecting.
-    // Players coming from the landing page already have a name saved.
-    // Players arriving via a shared link won't — show the name popup.
-    const savedName = getPlayerName();
-    if (savedName) {
-        startGame(savedName);
+    // Check if this player is joining a game they're not yet part of.
+    // If so, show the name entry popup before connecting.
+    checkAndConnect();
+    async function checkAndConnect() {
+        try {
+            const res = await fetch(`/api/games/${gameId}?playerToken=${encodeURIComponent(token)}`);
+            const data = await res.json();
+            // If game is waiting and we're not the creator, we're joining — ask for name
+            if (data.status === 'waiting' && !data.isPlayer) {
+                showNamePopup();
+                return;
+            }
+        }
+        catch {
+            // On error, just connect with whatever name we have
+        }
+        startGame(getPlayerName() || 'Player');
     }
-    else {
+    function showNamePopup() {
+        nameEntryInput.value = getPlayerName();
         nameOverlay.hidden = false;
         nameEntryInput.focus();
         nameEntryBtn.addEventListener('click', submitName);

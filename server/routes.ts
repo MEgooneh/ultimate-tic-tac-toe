@@ -23,7 +23,9 @@ router.get('/api/games/:id', rateLimit(30), (req: Request<{ id: string }>, res: 
     return;
   }
   const state = gm.getGameState(gameId);
-  res.json(state);
+  const playerToken = req.query.playerToken as string | undefined;
+  const isPlayer = playerToken ? (game.player_x === playerToken || game.player_o === playerToken) : false;
+  res.json({ ...state, isPlayer });
 });
 
 router.get('/api/health', (_req: Request, res: Response): void => {
