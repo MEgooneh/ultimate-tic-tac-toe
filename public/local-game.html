@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Local Game — Ultimate Tic-Tac-Toe</title>
+  <meta name="description" content="Play Ultimate Tic-Tac-Toe locally with a friend.">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/board.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body class="no-select">
+  <div class="game-container">
+    <div class="game-top-bar">
+      <a href="/" class="back-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg> Back</a>
+      <div class="game-mode-badge">Local Game</div>
+    </div>
+
+    <div class="versus-bar">
+      <div class="player-badge player-x" id="indicatorX">
+        <span class="player-symbol">X</span>
+        <span class="player-name" id="playerXName">Player X</span>
+      </div>
+      <div class="versus-text">vs</div>
+      <div class="player-badge player-o" id="indicatorO">
+        <span class="player-symbol">O</span>
+        <span class="player-name" id="playerOName">Player O</span>
+      </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">Loading...</div>
+
+    <div class="board-wrapper" id="boardWrapper">
+      <div class="meta-board" id="metaBoard"></div>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div class="overlay" id="gameOverOverlay" hidden>
+    <div class="overlay-content">
+      <div class="result-icon" id="resultIcon"></div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultSubtitle"></p>
+      <div class="overlay-actions">
+        <button class="btn btn-primary" id="rematchBtn">Play Again</button>
+        <button class="btn btn-secondary" id="newGameBtn">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/board-renderer.js"></script>
+  <script src="/js/local-game.js"></script>
+</body>
+</html>

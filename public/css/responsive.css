@@ -40,6 +40,35 @@
   }
 }
 
+/* Small phones - mode cards */
+@media (max-width: 380px) {
+  .mode-cards {
+    gap: 0.5rem;
+  }
+
+  .mode-card {
+    padding: 1rem 0.5rem;
+  }
+
+  .mode-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mode-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mode-label {
+    font-size: 0.9rem;
+  }
+
+  .mode-desc {
+    font-size: 0.7rem;
+  }
+}
+
 /* Phones */
 @media (max-width: 600px) {
   .landing {

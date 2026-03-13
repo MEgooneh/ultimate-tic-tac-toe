@@ -47,6 +47,32 @@ router.post('/api/games', (0, rate_limit_1.rateLimit)(10), (req, res) => {
     const gameId = gm.createGame(playerToken, playerName);
     res.json({ gameId });
 });
+router.post('/api/games/local', (0, rate_limit_1.rateLimit)(10), (req, res) => {
+    const { playerXName, playerOName } = req.body;
+    const gameId = gm.createLocalGame(playerXName, playerOName);
+    res.json({ gameId });
+});
+router.post('/api/games/local/:id/move', (0, rate_limit_1.rateLimit)(60), (req, res) => {
+    const { boardIndex, cellIndex } = req.body;
+    if (typeof boardIndex !== 'number' || typeof cellIndex !== 'number') {
+        res.status(400).json({ error: 'boardIndex and cellIndex are required' });
+        return;
+    }
+    const result = gm.makeLocalMove(req.params.id, boardIndex, cellIndex);
+    if (result.error) {
+        res.status(400).json({ error: result.error });
+        return;
+    }
+    res.json(result);
+});
+router.post('/api/games/local/:id/rematch', (0, rate_limit_1.rateLimit)(10), (req, res) => {
+    const result = gm.createLocalRematch(req.params.id);
+    if (result.error) {
+        res.status(400).json({ error: result.error });
+        return;
+    }
+    res.json(result);
+});
 router.get('/api/games/:id', (0, rate_limit_1.rateLimit)(30), (req, res) => {
     const gameId = req.params.id;
     const game = db.getGame(gameId);

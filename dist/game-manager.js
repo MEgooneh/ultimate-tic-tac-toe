@@ -37,6 +37,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createGame = createGame;
+exports.createLocalGame = createLocalGame;
+exports.makeLocalMove = makeLocalMove;
+exports.createLocalRematch = createLocalRematch;
 exports.joinGame = joinGame;
 exports.makeMove = makeMove;
 exports.createRematch = createRematch;
@@ -76,6 +79,7 @@ function createGame(playerToken, playerName) {
         finished_at: null,
         rematch_game_id: null,
         parent_game_id: null,
+        game_mode: 'online',
     };
     db.createGame(game);
     const expiryTimeout = setTimeout(() => {
@@ -83,6 +87,87 @@ function createGame(playerToken, playerName) {
     }, config_1.default.gameExpiryMs);
     activeGames.set(id, { connections: { X: null, O: null }, expiryTimeout, disconnectTimeout: null });
     return id;
+}
+function createLocalGame(playerXName, playerOName) {
+    const id = (0, nanoid_1.nanoid)(8);
+    const now = Date.now();
+    const game = {
+        id,
+        status: 'active',
+        player_x: 'local',
+        player_x_name: (playerXName || 'Player X').slice(0, 20),
+        player_o: 'local',
+        player_o_name: (playerOName || 'Player O').slice(0, 20),
+        current_turn: 'X',
+        board_state: JSON.stringify(logic.createEmptyBoard()),
+        active_board: -1,
+        winner: null,
+        meta_board: JSON.stringify(logic.createEmptyMetaBoard()),
+        created_at: now,
+        updated_at: now,
+        finished_at: null,
+        rematch_game_id: null,
+        parent_game_id: null,
+        game_mode: 'local',
+    };
+    db.createGame(game);
+    return id;
+}
+function makeLocalMove(gameId, boardIndex, cellIndex) {
+    const game = db.getGame(gameId);
+    if (!game)
+        return { error: 'Game not found' };
+    if (game.game_mode !== 'local')
+        return { error: 'Not a local game' };
+    const symbol = game.current_turn;
+    const boardState = JSON.parse(game.board_state);
+    const metaBoard = JSON.parse(game.meta_board);
+    if (!logic.isValidMove(boardState, metaBoard, game.active_board, boardIndex, cellIndex, game.current_turn, game.status)) {
+        return { error: 'Invalid move' };
+    }
+    const result = logic.applyMove(boardState, metaBoard, boardIndex, cellIndex, symbol);
+    const nextTurn = symbol === 'X' ? 'O' : 'X';
+    const now = Date.now();
+    const updates = {
+        board_state: JSON.stringify(result.boardState),
+        meta_board: JSON.stringify(result.metaBoard),
+        active_board: result.activeBoard,
+        current_turn: nextTurn,
+        updated_at: now,
+    };
+    if (result.winner) {
+        updates.status = 'finished';
+        updates.winner = result.winner;
+        updates.finished_at = now;
+    }
+    db.updateGame(gameId, updates);
+    return {
+        ok: true,
+        boardIndex,
+        cellIndex,
+        symbol,
+        activeBoard: result.activeBoard,
+        metaBoard: result.metaBoard,
+        winner: result.winner,
+        boardState: result.boardState,
+    };
+}
+function createLocalRematch(gameId) {
+    const game = db.getGame(gameId);
+    if (!game)
+        return { error: 'Game not found' };
+    if (game.status !== 'finished')
+        return { error: 'Game is not finished' };
+    if (game.game_mode !== 'local')
+        return { error: 'Not a local game' };
+    if (game.rematch_game_id) {
+        return { ok: true, newGameId: game.rematch_game_id };
+    }
+    const newId = createLocalGame(game.player_x_name, game.player_o_name);
+    const now = Date.now();
+    db.updateGame(gameId, { rematch_game_id: newId, updated_at: now });
+    db.updateGame(newId, { parent_game_id: gameId });
+    return { ok: true, newGameId: newId };
 }
 function joinGame(gameId, playerToken, playerName) {
     const game = db.getGame(gameId);
@@ -184,6 +269,7 @@ function createRematch(gameId, playerToken) {
         finished_at: null,
         rematch_game_id: null,
         parent_game_id: gameId,
+        game_mode: 'online',
     };
     db.createGame(newGame);
     db.updateGame(gameId, { rematch_game_id: id, updated_at: now });
@@ -309,5 +395,6 @@ function getGameState(gameId) {
         parentGameId: game.parent_game_id,
         playerXName: game.player_x_name || 'Player X',
         playerOName: game.player_o_name || 'Player O',
+        createdAt: game.created_at,
     };
 }

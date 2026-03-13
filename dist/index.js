@@ -64,6 +64,9 @@ app.use(admin_1.default);
 app.get('/game/:id', (_req, res) => {
     res.sendFile(path_1.default.join(__dirname, '..', 'public', 'game.html'));
 });
+app.get('/local/:id', (_req, res) => {
+    res.sendFile(path_1.default.join(__dirname, '..', 'public', 'local-game.html'));
+});
 app.get('/admin', (_req, res) => {
     res.sendFile(path_1.default.join(__dirname, '..', 'public', 'admin.html'));
 });

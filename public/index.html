@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ultimate Tic-Tac-Toe</title>
-  <meta name="description" content="Play Ultimate Tic-Tac-Toe online with friends. A strategic board game for 2 players.">
+  <meta name="description" content="Play Ultimate Tic-Tac-Toe online with friends or locally on the same device.">
   <meta property="og:title" content="Ultimate Tic-Tac-Toe">
-  <meta property="og:description" content="Play Ultimate Tic-Tac-Toe online with friends.">
+  <meta property="og:description" content="Play Ultimate Tic-Tac-Toe online with friends or locally.">
   <meta property="og:type" content="website">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/style.css">
@@ -24,22 +24,74 @@
       <h1>Ultimate<br>Tic-Tac-Toe</h1>
       <p class="tagline">A strategic board game for 2 players</p>
 
-      <div class="name-input-group">
-        <label for="playerNameInput" class="name-label">Your name</label>
-        <input type="text" id="playerNameInput" class="name-input" placeholder="Enter your name" maxlength="20" autocomplete="off" spellcheck="false">
+      <!-- Mode Selection -->
+      <div class="mode-cards">
+        <button class="mode-card" id="localModeBtn">
+          <div class="mode-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="mode-label">Local Play</div>
+          <div class="mode-desc">Two players, one device</div>
+        </button>
+        <button class="mode-card" id="onlineModeBtn">
+          <div class="mode-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div class="mode-label">Online</div>
+          <div class="mode-desc">Play with a friend remotely</div>
+        </button>
       </div>
 
-      <button class="btn btn-primary btn-large" id="startGameBtn">
-        Start Game
-      </button>
-
-      <div class="divider">
-        <span>or join with a code</span>
+      <!-- Local Play Panel -->
+      <div class="mode-panel" id="localPanel" hidden>
+        <div class="panel-header">
+          <button class="panel-back" id="localBackBtn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg>
+          </button>
+          <h2 class="panel-title">Local Play</h2>
+        </div>
+        <div class="local-names">
+          <div class="local-name-group">
+            <label for="playerXName" class="name-label"><span class="label-symbol x-label">X</span> Player name</label>
+            <input type="text" id="playerXName" class="name-input" placeholder="Player X" maxlength="20" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="local-name-group">
+            <label for="playerOName" class="name-label"><span class="label-symbol o-label">O</span> Player name</label>
+            <input type="text" id="playerOName" class="name-input" placeholder="Player O" maxlength="20" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-large" id="startLocalBtn">Start Local Game</button>
       </div>
 
-      <div class="join-form">
-        <input type="text" id="gameCodeInput" placeholder="Enter game code" maxlength="8" autocomplete="off" spellcheck="false">
-        <button class="btn btn-secondary" id="joinGameBtn">Join</button>
+      <!-- Online Play Panel -->
+      <div class="mode-panel" id="onlinePanel" hidden>
+        <div class="panel-header">
+          <button class="panel-back" id="onlineBackBtn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg>
+          </button>
+          <h2 class="panel-title">Online Multiplayer</h2>
+        </div>
+        <div class="name-input-group">
+          <label for="playerNameInput" class="name-label">Your name</label>
+          <input type="text" id="playerNameInput" class="name-input" placeholder="Enter your name" maxlength="20" autocomplete="off" spellcheck="false">
+        </div>
+        <button class="btn btn-primary btn-large" id="startGameBtn">Create Game</button>
+        <div class="divider">
+          <span>or join with a code</span>
+        </div>
+        <div class="join-form">
+          <input type="text" id="gameCodeInput" placeholder="Enter game code" maxlength="8" autocomplete="off" spellcheck="false">
+          <button class="btn btn-secondary" id="joinGameBtn">Join</button>
+        </div>
       </div>
 
       <div id="errorMsg" class="error-msg" hidden></div>

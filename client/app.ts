@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Mode selection
+  const localModeBtn = document.getElementById('localModeBtn') as HTMLButtonElement;
+  const onlineModeBtn = document.getElementById('onlineModeBtn') as HTMLButtonElement;
+  const localPanel = document.getElementById('localPanel') as HTMLElement;
+  const onlinePanel = document.getElementById('onlinePanel') as HTMLElement;
+  const localBackBtn = document.getElementById('localBackBtn') as HTMLButtonElement;
+  const onlineBackBtn = document.getElementById('onlineBackBtn') as HTMLButtonElement;
+  const modeCards = document.querySelector('.mode-cards') as HTMLElement;
+
+  // Online elements
   const startBtn = document.getElementById('startGameBtn') as HTMLButtonElement;
   const joinBtn = document.getElementById('joinGameBtn') as HTMLButtonElement;
   const codeInput = document.getElementById('gameCodeInput') as HTMLInputElement;
@@ -6,8 +16,58 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMsg = document.getElementById('errorMsg') as HTMLElement;
   const token = getPlayerToken();
 
+  // Local elements
+  const playerXNameInput = document.getElementById('playerXName') as HTMLInputElement;
+  const playerONameInput = document.getElementById('playerOName') as HTMLInputElement;
+  const startLocalBtn = document.getElementById('startLocalBtn') as HTMLButtonElement;
+
   nameInput.value = getPlayerName();
 
+  function showPanel(panel: HTMLElement): void {
+    modeCards.hidden = true;
+    panel.hidden = false;
+    panel.classList.add('panel-enter');
+    requestAnimationFrame(() => panel.classList.remove('panel-enter'));
+  }
+
+  function hidePanel(): void {
+    localPanel.hidden = true;
+    onlinePanel.hidden = true;
+    modeCards.hidden = false;
+  }
+
+  localModeBtn.addEventListener('click', () => showPanel(localPanel));
+  onlineModeBtn.addEventListener('click', () => showPanel(onlinePanel));
+  localBackBtn.addEventListener('click', hidePanel);
+  onlineBackBtn.addEventListener('click', hidePanel);
+
+  // Local game creation
+  startLocalBtn.addEventListener('click', async () => {
+    const xName = playerXNameInput.value.trim() || 'Player X';
+    const oName = playerONameInput.value.trim() || 'Player O';
+    startLocalBtn.disabled = true;
+    startLocalBtn.textContent = 'Creating...';
+    try {
+      const res = await fetch('/api/games/local', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerXName: xName, playerOName: oName }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        showError(errorMsg, data.error);
+        return;
+      }
+      window.location.href = `/local/${data.gameId}`;
+    } catch {
+      showError(errorMsg, 'Failed to create game. Please try again.');
+    } finally {
+      startLocalBtn.disabled = false;
+      startLocalBtn.textContent = 'Start Local Game';
+    }
+  });
+
+  // Online game creation
   startBtn.addEventListener('click', async () => {
     const name = nameInput.value.trim() || 'Player';
     setPlayerName(name);
@@ -29,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showError(errorMsg, 'Failed to create game. Please try again.');
     } finally {
       startBtn.disabled = false;
-      startBtn.textContent = 'Start Game';
+      startBtn.textContent = 'Create Game';
     }
   });
 

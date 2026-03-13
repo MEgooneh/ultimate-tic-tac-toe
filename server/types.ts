@@ -2,6 +2,7 @@ export type PlayerSymbol = 'X' | 'O';
 export type CellValue = PlayerSymbol | null;
 export type MetaValue = PlayerSymbol | 'draw' | null;
 export type GameStatus = 'waiting' | 'active' | 'finished' | 'expired';
+export type GameMode = 'online' | 'local';
 
 export type SubBoard = CellValue[];
 export type BoardState = SubBoard[];
@@ -24,6 +25,7 @@ export interface GameRow {
   finished_at: number | null;
   rematch_game_id: string | null;
   parent_game_id: string | null;
+  game_mode: GameMode;
 }
 
 export interface GameState {
@@ -38,6 +40,7 @@ export interface GameState {
   parentGameId: string | null;
   playerXName: string;
   playerOName: string;
+  createdAt: number;
 }
 
 export interface MoveResult {
@@ -65,4 +68,6 @@ export interface GameUpdateFields {
   updated_at?: number;
   finished_at?: number | null;
   rematch_game_id?: string | null;
+  parent_game_id?: string | null;
+  game_mode?: GameMode;
 }

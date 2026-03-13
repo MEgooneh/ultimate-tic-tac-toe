@@ -224,7 +224,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function startCountdown(): void {
     clearCountdown();
-    const expiresAt = Date.now() + 10 * 60 * 1000;
+    // Sync with server: game expires 10 minutes after creation
+    const createdAt = gameState?.createdAt || Date.now();
+    const expiresAt = createdAt + 10 * 60 * 1000;
     countdownInterval = setInterval(() => {
       const remaining = Math.max(0, expiresAt - Date.now());
       const mins = Math.floor(remaining / 60000);

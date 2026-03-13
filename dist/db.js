@@ -40,11 +40,17 @@ function init() {
       updated_at INTEGER NOT NULL,
       finished_at INTEGER,
       rematch_game_id TEXT,
-      parent_game_id TEXT
+      parent_game_id TEXT,
+      game_mode TEXT DEFAULT 'online'
     )
   `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_games_status ON games(status)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_games_created_at ON games(created_at)');
+    // Migration: add game_mode column if missing (for existing databases)
+    try {
+        db.exec('ALTER TABLE games ADD COLUMN game_mode TEXT DEFAULT \'online\'');
+    }
+    catch { /* column already exists */ }
     return db;
 }
 function getDb() {
@@ -54,10 +60,10 @@ function getDb() {
 }
 function createGame(game) {
     const stmt = getDb().prepare(`
-    INSERT INTO games (id, status, player_x, player_x_name, player_o, player_o_name, current_turn, board_state, active_board, winner, meta_board, created_at, updated_at, finished_at, rematch_game_id, parent_game_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO games (id, status, player_x, player_x_name, player_o, player_o_name, current_turn, board_state, active_board, winner, meta_board, created_at, updated_at, finished_at, rematch_game_id, parent_game_id, game_mode)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-    stmt.run(game.id, game.status, game.player_x, game.player_x_name, game.player_o, game.player_o_name, game.current_turn, game.board_state, game.active_board, game.winner, game.meta_board, game.created_at, game.updated_at, game.finished_at, game.rematch_game_id, game.parent_game_id);
+    stmt.run(game.id, game.status, game.player_x, game.player_x_name, game.player_o, game.player_o_name, game.current_turn, game.board_state, game.active_board, game.winner, game.meta_board, game.created_at, game.updated_at, game.finished_at, game.rematch_game_id, game.parent_game_id, game.game_mode || 'online');
 }
 function getGame(id) {
     const stmt = getDb().prepare('SELECT * FROM games WHERE id = ?');
