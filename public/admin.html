@@ -103,6 +103,7 @@
     .stat-o { color: var(--color-o); }
     .stat-draw { color: var(--color-draw); }
     .stat-active { color: var(--color-success); }
+    .stat-local { color: var(--color-active); }
 
     /* ── Charts ────────────────────────────────────────── */
     .charts-row {
@@ -220,6 +221,8 @@
     .badge-finished { background: var(--color-o-light); color: var(--color-o); }
     .badge-waiting  { background: var(--color-active-light); color: var(--color-active); }
     .badge-expired  { background: rgba(255,255,255,.06); color: var(--color-text-muted); }
+    .badge-online   { background: var(--color-o-light); color: var(--color-o); }
+    .badge-local    { background: rgba(241,196,15,.15); color: var(--color-active); }
 
     .winner-x { color: var(--color-x); font-weight: 700; }
     .winner-o { color: var(--color-o); font-weight: 700; }
@@ -344,6 +347,7 @@
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Mode</th>
                 <th>Status</th>
                 <th>Player X</th>
                 <th>Player O</th>
@@ -453,8 +457,9 @@
     const avgDur = o.avgGameDurationMs ? formatDuration(o.avgGameDurationMs) : '—';
     const cards = [
       { value: o.totalGames, label: 'Total Games', cls: '' },
+      { value: o.onlineGames || 0, label: 'Online', cls: 'stat-o' },
+      { value: o.localGames || 0, label: 'Local', cls: 'stat-local' },
       { value: o.activeGames, label: 'Active', cls: 'stat-active' },
-      { value: o.waitingGames, label: 'Waiting', cls: '' },
       { value: o.finishedGames, label: 'Finished', cls: '' },
       { value: o.xWins, label: 'X Wins', cls: 'stat-x' },
       { value: o.oWins, label: 'O Wins', cls: 'stat-o' },
@@ -655,6 +660,8 @@
     const tbody = $('gamesBody');
     tbody.innerHTML = data.games.map(g => {
       const statusCls = 'badge-' + g.status;
+      const mode = g.game_mode || 'online';
+      const modeCls = 'badge-' + mode;
       let winnerHtml = '—';
       if (g.winner === 'X') winnerHtml = '<span class="winner-x">X</span>';
       else if (g.winner === 'O') winnerHtml = '<span class="winner-o">O</span>';
@@ -666,6 +673,7 @@
 
       return '<tr>' +
         '<td><code style="font-size:0.8rem">' + g.id + '</code></td>' +
+        '<td><span class="badge ' + modeCls + '">' + mode + '</span></td>' +
         '<td><span class="badge ' + statusCls + '">' + g.status + '</span></td>' +
         '<td>' + esc(g.player_x_name) + '</td>' +
         '<td>' + esc(g.player_o_name || '—') + '</td>' +

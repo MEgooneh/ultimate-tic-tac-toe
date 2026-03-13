@@ -95,6 +95,8 @@ export interface StatsOverview {
   oWins: number;
   draws: number;
   avgGameDurationMs: number | null;
+  onlineGames: number;
+  localGames: number;
 }
 
 export function getStatsOverview(): StatsOverview {
@@ -108,7 +110,9 @@ export function getStatsOverview(): StatsOverview {
       SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) as expiredGames,
       SUM(CASE WHEN winner='X' THEN 1 ELSE 0 END) as xWins,
       SUM(CASE WHEN winner='O' THEN 1 ELSE 0 END) as oWins,
-      SUM(CASE WHEN winner='draw' THEN 1 ELSE 0 END) as draws
+      SUM(CASE WHEN winner='draw' THEN 1 ELSE 0 END) as draws,
+      SUM(CASE WHEN COALESCE(game_mode,'online')='online' THEN 1 ELSE 0 END) as onlineGames,
+      SUM(CASE WHEN game_mode='local' THEN 1 ELSE 0 END) as localGames
     FROM games
   `).get() as any;
 
@@ -127,6 +131,8 @@ export function getStatsOverview(): StatsOverview {
     oWins: totals.oWins ?? 0,
     draws: totals.draws ?? 0,
     avgGameDurationMs: avg.avgDur ?? null,
+    onlineGames: totals.onlineGames ?? 0,
+    localGames: totals.localGames ?? 0,
   };
 }
 
@@ -168,6 +174,7 @@ export interface GameListRow {
   winner: string | null;
   created_at: number;
   finished_at: number | null;
+  game_mode: string;
 }
 
 export function getGamesList(page: number, pageSize: number = 20): { games: GameListRow[]; total: number } {
@@ -175,7 +182,7 @@ export function getGamesList(page: number, pageSize: number = 20): { games: Game
   const total = (d.prepare('SELECT COUNT(*) as c FROM games').get() as any).c as number;
   const offset = (page - 1) * pageSize;
   const games = d.prepare(`
-    SELECT id, status, player_x_name, player_o_name, winner, created_at, finished_at
+    SELECT id, status, player_x_name, player_o_name, winner, created_at, finished_at, COALESCE(game_mode, 'online') as game_mode
     FROM games ORDER BY created_at DESC LIMIT ? OFFSET ?
   `).all(pageSize, offset) as unknown as GameListRow[];
   return { games, total };

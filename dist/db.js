@@ -99,7 +99,9 @@ function getStatsOverview() {
       SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) as expiredGames,
       SUM(CASE WHEN winner='X' THEN 1 ELSE 0 END) as xWins,
       SUM(CASE WHEN winner='O' THEN 1 ELSE 0 END) as oWins,
-      SUM(CASE WHEN winner='draw' THEN 1 ELSE 0 END) as draws
+      SUM(CASE WHEN winner='draw' THEN 1 ELSE 0 END) as draws,
+      SUM(CASE WHEN COALESCE(game_mode,'online')='online' THEN 1 ELSE 0 END) as onlineGames,
+      SUM(CASE WHEN game_mode='local' THEN 1 ELSE 0 END) as localGames
     FROM games
   `).get();
     const avg = d.prepare(`
@@ -116,6 +118,8 @@ function getStatsOverview() {
         oWins: totals.oWins ?? 0,
         draws: totals.draws ?? 0,
         avgGameDurationMs: avg.avgDur ?? null,
+        onlineGames: totals.onlineGames ?? 0,
+        localGames: totals.localGames ?? 0,
     };
 }
 function getGamesTimeSeries(days = 30) {
@@ -149,7 +153,7 @@ function getGamesList(page, pageSize = 20) {
     const total = d.prepare('SELECT COUNT(*) as c FROM games').get().c;
     const offset = (page - 1) * pageSize;
     const games = d.prepare(`
-    SELECT id, status, player_x_name, player_o_name, winner, created_at, finished_at
+    SELECT id, status, player_x_name, player_o_name, winner, created_at, finished_at, COALESCE(game_mode, 'online') as game_mode
     FROM games ORDER BY created_at DESC LIMIT ? OFFSET ?
   `).all(pageSize, offset);
     return { games, total };
