@@ -1,15 +1,16 @@
 # Ultimate Tic-Tac-Toe
 
-Online multiplayer Ultimate Tic-Tac-Toe. Create a game, share the code, play in real-time.
+Ultimate Tic-Tac-Toe — play online with friends or locally on the same device.
 
 ## Features
 
-- Real-time multiplayer via WebSocket
+- **Local play** — two players, one device, pass and play
+- **Online multiplayer** — real-time via WebSocket, share a code or link
 - No accounts — just pick a name and play
-- Share game code or link to invite opponent
-- Rematch support
+- Rematch support (both modes)
 - Mobile-friendly
 - Self-hostable, single container
+- All games (local and online) logged in the database
 
 ## Run locally
 
