@@ -154,10 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatus(gameState);
         });
         ws.on('game_expired', () => {
-            waitingOverlay.hidden = true;
             clearCountdown();
-            statusBar.textContent = 'Game expired — no one joined';
-            statusBar.className = 'status-bar';
+            window.location.href = '/';
         });
         ws.on('rematch_offered', (data) => {
             pendingRematchId = data.newGameId;
@@ -213,8 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const mins = Math.floor(remaining / 60000);
             const secs = Math.floor((remaining % 60000) / 1000);
             countdownTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-            if (remaining <= 0)
+            if (remaining <= 0) {
                 clearCountdown();
+                window.location.href = '/';
+            }
         }, 1000);
     }
     function clearCountdown() {
